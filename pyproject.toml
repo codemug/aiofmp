@@ -3,13 +3,13 @@ name = "aiofmp"
 version = "0.1.0"
 description = "Asynchronous Financial Modeling Prep API Client with MCP Server"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "Apache 2.0"}
 requires-python = ">=3.8"
 authors = [
-    {name = "codemug", email = "codemug@users.noreply.github.com"}
+    {name = "codemug", email = "u.manshahid@gmail.com"}
 ]
 maintainers = [
-    {name = "codemug", email = "codemug@users.noreply.github.com"}
+    {name = "codemug", email = "u.manshahid@gmail.com"}
 ]
 keywords = [
     "financial",
@@ -45,6 +45,7 @@ Homepage = "https://github.com/codemug/aiofmp"
 Documentation = "https://github.com/codemug/aiofmp#readme"
 Repository = "https://github.com/codemug/aiofmp.git"
 Issues = "https://github.com/codemug/aiofmp/issues"
+
 dependencies = [
     "aiohttp>=3.12.15",
     "fastmcp>=2.0.0",
