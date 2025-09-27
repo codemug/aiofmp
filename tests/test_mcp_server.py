@@ -8,12 +8,17 @@ in the aiofmp package.
 import pytest
 import os
 from unittest.mock import patch, MagicMock
-from aiofmp.mcp_server import get_fmp_client, run_server, main
+from aiofmp.mcp_server import run_server, main
+from aiofmp.fmp_client import get_fmp_client, reset_fmp_client
 from aiofmp.base import FMPAuthenticationError, FMPRateLimitError, FMPResponseError
 
 
 class TestMCPServer:
     """Test MCP server functionality."""
+    
+    def setup_method(self):
+        """Reset the FMP client before each test."""
+        reset_fmp_client()
     
     def test_get_fmp_client_creation(self):
         """Test FMP client creation."""
@@ -40,7 +45,10 @@ class TestMCPServer:
         """Test running server with STDIO transport."""
         with patch.dict(os.environ, {'FMP_API_KEY': 'test_key', 'MCP_TRANSPORT': 'stdio'}):
             with patch('aiofmp.mcp_server.mcp.run') as mock_run:
-                mock_run.return_value = None
+                # Mock the run method to return a coroutine
+                async def mock_run_coro(*args, **kwargs):
+                    pass
+                mock_run.return_value = mock_run_coro()
                 
                 await run_server()
                 
@@ -51,7 +59,10 @@ class TestMCPServer:
         """Test running server with HTTP transport."""
         with patch.dict(os.environ, {'FMP_API_KEY': 'test_key', 'MCP_TRANSPORT': 'http', 'MCP_HOST': 'localhost', 'MCP_PORT': '3000'}):
             with patch('aiofmp.mcp_server.mcp.run') as mock_run:
-                mock_run.return_value = None
+                # Mock the run method to return a coroutine
+                async def mock_run_coro(*args, **kwargs):
+                    pass
+                mock_run.return_value = mock_run_coro()
                 
                 await run_server()
                 
@@ -62,7 +73,12 @@ class TestMCPServer:
         """Test running server with missing API key."""
         with patch.dict(os.environ, {}, clear=True):
             with patch('sys.exit') as mock_exit:
-                await run_server()
+                # Mock sys.exit to raise SystemExit to prevent further execution
+                mock_exit.side_effect = SystemExit(1)
+                
+                with pytest.raises(SystemExit):
+                    await run_server()
+                
                 mock_exit.assert_called_once_with(1)
     
     @pytest.mark.asyncio
@@ -70,7 +86,10 @@ class TestMCPServer:
         """Test handling keyboard interrupt."""
         with patch.dict(os.environ, {'FMP_API_KEY': 'test_key'}):
             with patch('aiofmp.mcp_server.mcp.run') as mock_run:
-                mock_run.side_effect = KeyboardInterrupt()
+                # Mock the run method to raise KeyboardInterrupt
+                async def mock_run_coro(*args, **kwargs):
+                    raise KeyboardInterrupt()
+                mock_run.return_value = mock_run_coro()
                 
                 await run_server()
                 
@@ -98,84 +117,8 @@ class TestMCPServer:
             mock_run_server.assert_called_once()
 
 
-class TestMCPServerErrorHandling:
-    """Test MCP server error handling."""
-    
-    def test_error_handler_authentication_error(self):
-        """Test error handler for authentication errors."""
-        from aiofmp.mcp_server import mcp
-        
-        # Mock the error handler
-        error_handler = None
-        for handler in mcp._error_handlers:
-            if hasattr(handler, '__name__') and handler.__name__ == 'handle_error':
-                error_handler = handler
-                break
-        
-        if error_handler:
-            error = FMPAuthenticationError("Invalid API key")
-            result = error_handler(error)
-            
-            assert result["error"] == "Authentication failed"
-            assert result["message"] == "Invalid API key"
-            assert result["type"] == "authentication_error"
-    
-    def test_error_handler_rate_limit_error(self):
-        """Test error handler for rate limit errors."""
-        from aiofmp.mcp_server import mcp
-        
-        # Mock the error handler
-        error_handler = None
-        for handler in mcp._error_handlers:
-            if hasattr(handler, '__name__') and handler.__name__ == 'handle_error':
-                error_handler = handler
-                break
-        
-        if error_handler:
-            error = FMPRateLimitError("Rate limit exceeded")
-            result = error_handler(error)
-            
-            assert result["error"] == "Rate limit exceeded"
-            assert result["message"] == "Too many requests, please try again later"
-            assert result["type"] == "rate_limit_error"
-    
-    def test_error_handler_response_error(self):
-        """Test error handler for response errors."""
-        from aiofmp.mcp_server import mcp
-        
-        # Mock the error handler
-        error_handler = None
-        for handler in mcp._error_handlers:
-            if hasattr(handler, '__name__') and handler.__name__ == 'handle_error':
-                error_handler = handler
-                break
-        
-        if error_handler:
-            error = FMPResponseError("API response error")
-            result = error_handler(error)
-            
-            assert result["error"] == "API response error"
-            assert result["message"] == "API response error"
-            assert result["type"] == "api_error"
-    
-    def test_error_handler_general_error(self):
-        """Test error handler for general errors."""
-        from aiofmp.mcp_server import mcp
-        
-        # Mock the error handler
-        error_handler = None
-        for handler in mcp._error_handlers:
-            if hasattr(handler, '__name__') and handler.__name__ == 'handle_error':
-                error_handler = handler
-                break
-        
-        if error_handler:
-            error = Exception("General error")
-            result = error_handler(error)
-            
-            assert result["error"] == "Internal server error"
-            assert result["message"] == "General error"
-            assert result["type"] == "internal_error"
+# Error handler tests removed - FastMCP doesn't support global error handlers
+# Error handling is done at the individual tool level
 
 
 class TestMCPServerConfiguration:

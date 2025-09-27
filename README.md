@@ -1,9 +1,5 @@
 # aiofmp
 
-A modern, async-first Python client for the Financial Modeling Prep (FMP) API, designed with clean architecture, comprehensive functionality, and built-in Model Context Protocol (MCP) server support for AI assistants.
-
-## Overview
-
 **aiofmp** is a comprehensive Python SDK that provides seamless access to the Financial Modeling Prep API through an intuitive, category-based interface. Built with asyncio for high-performance concurrent operations, it offers:
 
 - **Complete FMP API Coverage**: Access to 22+ API categories including financial statements, market data, news, technical indicators, and more
@@ -17,10 +13,10 @@ A modern, async-first Python client for the Financial Modeling Prep (FMP) API, d
 
 ### Key Features
 
-- **160+ MCP Tools**: Every FMP API function exposed as an MCP tool for AI assistants
 - **22 API Categories**: Complete coverage of all FMP API endpoints
-- **Dual Transport Support**: Both STDIO and HTTP transport modes for MCP server
 - **Flexible Configuration**: Environment-based configuration for easy deployment
+- **160+ MCP Tools**: Every FMP API function exposed as an MCP tool for AI assistants
+- **Dual Transport Support**: Both STDIO and HTTP transport modes for MCP server
 - **Comprehensive Testing**: Full test coverage with 500+ unit tests
 - **Production Ready**: Built for reliability and performance in production environments
 
@@ -29,7 +25,7 @@ A modern, async-first Python client for the Financial Modeling Prep (FMP) API, d
 ### Prerequisites
 
 - Python 3.8 or higher
-- Financial Modeling Prep API key ([Get one here](https://financialmodelingprep.com/developer/docs))
+- Financial Modeling Prep API key ([Get one here](https://site.financialmodelingprep.com/developer/docs/pricing))
 
 ### Install from Source
 
@@ -41,21 +37,14 @@ cd aiofmp
 # Install dependencies using uv (recommended)
 uv sync
 
+# Install the package in development mode
+uv pip install -e .
+
 # Or using pip
 pip install -e .
 
-# Activate virtual environment
+# Activate virtual environment (if using uv)
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-```
-
-### Install Dependencies
-
-```bash
-# Using uv (recommended)
-uv add fastmcp pytest pytest-asyncio
-
-# Or using pip
-pip install fastmcp pytest pytest-asyncio
 ```
 
 ## Usage
@@ -111,17 +100,27 @@ export MCP_LOG_LEVEL="INFO"   # DEBUG, INFO, WARNING, ERROR
 
 **STDIO Transport (for MCP clients like Claude Desktop):**
 ```bash
-python -m aiofmp.mcp_server
+aiofmp-mcp-server
 ```
 
 **HTTP Transport (for web-based MCP clients):**
 ```bash
-MCP_TRANSPORT=http python -m aiofmp.mcp_server
+aiofmp-mcp-server --transport http
 ```
 
 **Custom Configuration:**
 ```bash
-MCP_TRANSPORT=http MCP_HOST=0.0.0.0 MCP_PORT=8080 python -m aiofmp.mcp_server
+aiofmp-mcp-server --transport http --host 0.0.0.0 --port 8080
+```
+
+**With API Key:**
+```bash
+aiofmp-mcp-server --api-key your_api_key_here
+```
+
+**With Debug Logging:**
+```bash
+aiofmp-mcp-server --log-level DEBUG
 ```
 
 #### Claude Desktop Integration
@@ -132,8 +131,19 @@ Add to your Claude Desktop configuration (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "aiofmp": {
-      "command": "python",
-      "args": ["-m", "aiofmp.mcp_server"],
+      "command": "aiofmp-mcp-server",
+      "args": ["--api-key", "your_api_key_here"]
+    }
+  }
+}
+```
+
+**Alternative with environment variable:**
+```json
+{
+  "mcpServers": {
+    "aiofmp": {
+      "command": "aiofmp-mcp-server",
       "env": {
         "FMP_API_KEY": "your_api_key_here"
       }
@@ -141,6 +151,37 @@ Add to your Claude Desktop configuration (`claude_desktop_config.json`):
   }
 }
 ```
+
+### CLI Reference
+
+The `aiofmp-mcp-server` command provides a user-friendly interface for running the MCP server:
+
+```bash
+# Basic usage
+aiofmp-mcp-server
+
+# Show help
+aiofmp-mcp-server --help
+
+# HTTP transport
+aiofmp-mcp-server --transport http --host 0.0.0.0 --port 8080
+
+# With API key
+aiofmp-mcp-server --api-key your_api_key_here
+
+# Debug logging
+aiofmp-mcp-server --log-level DEBUG
+
+# All options
+aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO --api-key your_key
+```
+
+**Command Options:**
+- `--transport`: Transport mode (`stdio` or `http`, default: `stdio`)
+- `--host`: Host for HTTP transport (default: `localhost`)
+- `--port`: Port for HTTP transport (default: `3000`)
+- `--log-level`: Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, default: `INFO`)
+- `--api-key`: FMP API key (can also be set via `FMP_API_KEY` environment variable)
 
 ### Available API Categories
 
@@ -242,7 +283,7 @@ uv run pytest tests/test_mcp_tools.py::TestSearchTools -v
 uv run pytest tests/test_mcp_server.py::TestMCPServer -v
 
 # Test with debug logging
-MCP_LOG_LEVEL=DEBUG python -m aiofmp.mcp_server
+aiofmp-mcp-server --log-level DEBUG
 ```
 
 ## Configuration

@@ -15,7 +15,7 @@ from .mcp_tools import (
     validate_limit,
     validate_page
 )
-from .mcp_server import get_fmp_client
+from .fmp_client import get_fmp_client
 
 logger = logging.getLogger(__name__)
 

@@ -13,8 +13,8 @@ from typing import Any, Dict, Optional
 
 from fastmcp import FastMCP
 
-from . import FmpClient
 from .base import FMPError, FMPAuthenticationError, FMPRateLimitError, FMPResponseError
+from .fmp_client import get_fmp_client, reset_fmp_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,20 +22,6 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server
 mcp = FastMCP("FMP MCP Server")
-
-# Global FMP client instance
-_fmp_client: Optional[FmpClient] = None
-
-
-def get_fmp_client() -> FmpClient:
-    """Get or create the FMP client instance."""
-    global _fmp_client
-    if _fmp_client is None:
-        api_key = os.getenv("FMP_API_KEY")
-        if not api_key:
-            raise FMPAuthenticationError("FMP_API_KEY environment variable is required")
-        _fmp_client = FmpClient(api_key=api_key)
-    return _fmp_client
 
 
 def register_tools():
@@ -76,40 +62,9 @@ def register_tools():
 
 def setup_error_handling():
     """Setup error handling for MCP tools."""
-    
-    @mcp.error_handler
-    async def handle_error(error: Exception) -> Dict[str, Any]:
-        """Handle errors from MCP tools."""
-        if isinstance(error, FMPAuthenticationError):
-            return {
-                "error": "Authentication failed",
-                "message": "Invalid or missing FMP API key",
-                "type": "authentication_error"
-            }
-        elif isinstance(error, FMPRateLimitError):
-            return {
-                "error": "Rate limit exceeded",
-                "message": "Too many requests, please try again later",
-                "type": "rate_limit_error"
-            }
-        elif isinstance(error, FMPResponseError):
-            return {
-                "error": "API response error",
-                "message": str(error),
-                "type": "api_error"
-            }
-        elif isinstance(error, FMPError):
-            return {
-                "error": "FMP API error",
-                "message": str(error),
-                "type": "fmp_error"
-            }
-        else:
-            return {
-                "error": "Internal server error",
-                "message": str(error),
-                "type": "internal_error"
-            }
+    # FastMCP doesn't support global error handlers
+    # Error handling is done at the individual tool level
+    pass
 
 
 async def run_server():
@@ -125,6 +80,7 @@ async def run_server():
         if not api_key:
             logger.error("FMP_API_KEY environment variable is required")
             sys.exit(1)
+            return  # This line will never be reached, but helps with static analysis
         
         # Register tools and setup error handling
         register_tools()
