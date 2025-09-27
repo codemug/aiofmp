@@ -5,7 +5,7 @@ This module provides ETF and mutual fund functionality including holdings breakd
 fund information, country allocation, asset exposure, sector weighting, and disclosures.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -22,7 +22,7 @@ class EtfAndMutualFundsCategory:
         """
         self._client = client
 
-    async def holdings(self, symbol: str) -> List[Dict[str, Any]]:
+    async def holdings(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get detailed breakdown of assets held within ETFs and mutual funds
 
@@ -41,7 +41,7 @@ class EtfAndMutualFundsCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("etf/holdings", params)
 
-    async def info(self, symbol: str) -> List[Dict[str, Any]]:
+    async def info(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get comprehensive information on ETFs and mutual funds
 
@@ -60,7 +60,7 @@ class EtfAndMutualFundsCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("etf/info", params)
 
-    async def country_weightings(self, symbol: str) -> List[Dict[str, Any]]:
+    async def country_weightings(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get country allocation breakdown for ETFs and mutual funds
 
@@ -79,7 +79,7 @@ class EtfAndMutualFundsCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("etf/country-weightings", params)
 
-    async def asset_exposure(self, symbol: str) -> List[Dict[str, Any]]:
+    async def asset_exposure(self, symbol: str) -> list[dict[str, Any]]:
         """
         Discover which ETFs hold specific stocks
 
@@ -98,7 +98,7 @@ class EtfAndMutualFundsCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("etf/asset-exposure", params)
 
-    async def sector_weightings(self, symbol: str) -> List[Dict[str, Any]]:
+    async def sector_weightings(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get sector weighting breakdown for ETFs and mutual funds
 
@@ -117,7 +117,7 @@ class EtfAndMutualFundsCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("etf/sector-weightings", params)
 
-    async def disclosure_holders_latest(self, symbol: str) -> List[Dict[str, Any]]:
+    async def disclosure_holders_latest(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get latest disclosures from mutual funds and ETFs
 
@@ -134,4 +134,6 @@ class EtfAndMutualFundsCategory:
             >>> # Returns: [{"symbol": "AAPL", "holder": "Fund Name", "shares": 1000000, ...}]
         """
         params = {"symbol": symbol}
-        return await self._client._make_request("funds/disclosure-holders-latest", params)
+        return await self._client._make_request(
+            "funds/disclosure-holders-latest", params
+        )

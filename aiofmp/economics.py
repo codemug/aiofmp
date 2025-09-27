@@ -5,7 +5,7 @@ This module provides economics functionality including treasury rates, economic 
 economic data releases calendar, and market risk premium data.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,10 +23,8 @@ class EconomicsCategory:
         self._client = client
 
     async def treasury_rates(
-            self,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get real-time and historical Treasury rates for all maturities
 
@@ -52,11 +50,8 @@ class EconomicsCategory:
         return await self._client._make_request("treasury-rates", params)
 
     async def economic_indicators(
-            self,
-            name: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, name: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get real-time and historical economic data for key indicators
 
@@ -94,10 +89,8 @@ class EconomicsCategory:
         return await self._client._make_request("economic-indicators", params)
 
     async def economic_calendar(
-            self,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get comprehensive calendar of upcoming economic data releases
 
@@ -122,7 +115,7 @@ class EconomicsCategory:
 
         return await self._client._make_request("economic-calendar", params)
 
-    async def market_risk_premium(self) -> List[Dict[str, Any]]:
+    async def market_risk_premium(self) -> list[dict[str, Any]]:
         """
         Get market risk premium data for various countries
 

@@ -5,7 +5,7 @@ This module provides analyst functionality including financial estimates, rating
 price targets, stock grades, and related news and historical data.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,12 +23,12 @@ class AnalystCategory:
         self._client = client
 
     async def financial_estimates(
-            self,
-            symbol: str,
-            period: str,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period: str,
+        page: int | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get analyst financial estimates for a stock symbol
 
@@ -56,10 +56,8 @@ class AnalystCategory:
         return await self._client._make_request("analyst-estimates", params)
 
     async def ratings_snapshot(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get current financial ratings snapshot for a stock symbol
 
@@ -83,10 +81,8 @@ class AnalystCategory:
         return await self._client._make_request("ratings-snapshot", params)
 
     async def historical_ratings(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get historical financial ratings for a stock symbol
 
@@ -109,7 +105,7 @@ class AnalystCategory:
 
         return await self._client._make_request("ratings-historical", params)
 
-    async def price_target_summary(self, symbol: str) -> List[Dict[str, Any]]:
+    async def price_target_summary(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get price target summary from analysts for a stock symbol
 
@@ -128,7 +124,7 @@ class AnalystCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("price-target-summary", params)
 
-    async def price_target_consensus(self, symbol: str) -> List[Dict[str, Any]]:
+    async def price_target_consensus(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get price target consensus from analysts for a stock symbol
 
@@ -148,11 +144,8 @@ class AnalystCategory:
         return await self._client._make_request("price-target-consensus", params)
 
     async def price_target_news(
-            self,
-            symbol: str,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, page: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get news about analyst price targets for a stock symbol
 
@@ -179,10 +172,8 @@ class AnalystCategory:
         return await self._client._make_request("price-target-news", params)
 
     async def price_target_latest_news(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, page: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get latest analyst price target news for all stock symbols
 
@@ -207,7 +198,7 @@ class AnalystCategory:
 
         return await self._client._make_request("price-target-latest-news", params)
 
-    async def stock_grades(self, symbol: str) -> List[Dict[str, Any]]:
+    async def stock_grades(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get latest stock grades from analysts for a stock symbol
 
@@ -227,10 +218,8 @@ class AnalystCategory:
         return await self._client._make_request("grades", params)
 
     async def historical_stock_grades(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get historical analyst grades for a stock symbol
 
@@ -253,7 +242,7 @@ class AnalystCategory:
 
         return await self._client._make_request("grades-historical", params)
 
-    async def stock_grades_summary(self, symbol: str) -> List[Dict[str, Any]]:
+    async def stock_grades_summary(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get summary of analyst grades consensus for a stock symbol
 
@@ -273,11 +262,8 @@ class AnalystCategory:
         return await self._client._make_request("grades-consensus", params)
 
     async def stock_grade_news(
-            self,
-            symbol: str,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, page: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get news about analyst grade changes for a stock symbol
 
@@ -304,10 +290,8 @@ class AnalystCategory:
         return await self._client._make_request("grades-news", params)
 
     async def stock_grade_latest_news(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, page: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get latest analyst grade change news for all stock symbols
 

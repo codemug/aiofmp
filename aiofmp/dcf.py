@@ -5,7 +5,7 @@ This module provides DCF functionality including basic DCF valuation, levered DC
 and custom DCF calculations with detailed financial parameters.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -22,7 +22,7 @@ class DiscountedCashFlowCategory:
         """
         self._client = client
 
-    async def dcf_valuation(self, symbol: str) -> List[Dict[str, Any]]:
+    async def dcf_valuation(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get basic DCF valuation for a company
 
@@ -41,7 +41,7 @@ class DiscountedCashFlowCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("discounted-cash-flow", params)
 
-    async def levered_dcf(self, symbol: str) -> List[Dict[str, Any]]:
+    async def levered_dcf(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get levered DCF valuation incorporating debt impact
 
@@ -61,27 +61,27 @@ class DiscountedCashFlowCategory:
         return await self._client._make_request("levered-discounted-cash-flow", params)
 
     async def custom_dcf_advanced(
-            self,
-            symbol: str,
-            revenue_growth_pct: Optional[float] = None,
-            ebitda_pct: Optional[float] = None,
-            depreciation_and_amortization_pct: Optional[float] = None,
-            cash_and_short_term_investments_pct: Optional[float] = None,
-            receivables_pct: Optional[float] = None,
-            inventories_pct: Optional[float] = None,
-            payable_pct: Optional[float] = None,
-            ebit_pct: Optional[float] = None,
-            capital_expenditure_pct: Optional[float] = None,
-            operating_cash_flow_pct: Optional[float] = None,
-            selling_general_and_administrative_expenses_pct: Optional[float] = None,
-            tax_rate: Optional[float] = None,
-            long_term_growth_rate: Optional[float] = None,
-            cost_of_debt: Optional[float] = None,
-            cost_of_equity: Optional[float] = None,
-            market_risk_premium: Optional[float] = None,
-            beta: Optional[float] = None,
-            risk_free_rate: Optional[float] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        revenue_growth_pct: float | None = None,
+        ebitda_pct: float | None = None,
+        depreciation_and_amortization_pct: float | None = None,
+        cash_and_short_term_investments_pct: float | None = None,
+        receivables_pct: float | None = None,
+        inventories_pct: float | None = None,
+        payable_pct: float | None = None,
+        ebit_pct: float | None = None,
+        capital_expenditure_pct: float | None = None,
+        operating_cash_flow_pct: float | None = None,
+        selling_general_and_administrative_expenses_pct: float | None = None,
+        tax_rate: float | None = None,
+        long_term_growth_rate: float | None = None,
+        cost_of_debt: float | None = None,
+        cost_of_equity: float | None = None,
+        market_risk_premium: float | None = None,
+        beta: float | None = None,
+        risk_free_rate: float | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get custom DCF analysis with detailed financial parameters
 
@@ -125,7 +125,9 @@ class DiscountedCashFlowCategory:
         if depreciation_and_amortization_pct is not None:
             params["depreciationAndAmortizationPct"] = depreciation_and_amortization_pct
         if cash_and_short_term_investments_pct is not None:
-            params["cashAndShortTermInvestmentsPct"] = cash_and_short_term_investments_pct
+            params["cashAndShortTermInvestmentsPct"] = (
+                cash_and_short_term_investments_pct
+            )
         if receivables_pct is not None:
             params["receivablesPct"] = receivables_pct
         if inventories_pct is not None:
@@ -139,7 +141,9 @@ class DiscountedCashFlowCategory:
         if operating_cash_flow_pct is not None:
             params["operatingCashFlowPct"] = operating_cash_flow_pct
         if selling_general_and_administrative_expenses_pct is not None:
-            params["sellingGeneralAndAdministrativeExpensesPct"] = selling_general_and_administrative_expenses_pct
+            params["sellingGeneralAndAdministrativeExpensesPct"] = (
+                selling_general_and_administrative_expenses_pct
+            )
         if tax_rate is not None:
             params["taxRate"] = tax_rate
         if long_term_growth_rate is not None:
@@ -158,27 +162,27 @@ class DiscountedCashFlowCategory:
         return await self._client._make_request("custom-discounted-cash-flow", params)
 
     async def custom_dcf_levered(
-            self,
-            symbol: str,
-            revenue_growth_pct: Optional[float] = None,
-            ebitda_pct: Optional[float] = None,
-            depreciation_and_amortization_pct: Optional[float] = None,
-            cash_and_short_term_investments_pct: Optional[float] = None,
-            receivables_pct: Optional[float] = None,
-            inventories_pct: Optional[float] = None,
-            payable_pct: Optional[float] = None,
-            ebit_pct: Optional[float] = None,
-            capital_expenditure_pct: Optional[float] = None,
-            operating_cash_flow_pct: Optional[float] = None,
-            selling_general_and_administrative_expenses_pct: Optional[float] = None,
-            tax_rate: Optional[float] = None,
-            long_term_growth_rate: Optional[float] = None,
-            cost_of_debt: Optional[float] = None,
-            cost_of_equity: Optional[float] = None,
-            market_risk_premium: Optional[float] = None,
-            beta: Optional[float] = None,
-            risk_free_rate: Optional[float] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        revenue_growth_pct: float | None = None,
+        ebitda_pct: float | None = None,
+        depreciation_and_amortization_pct: float | None = None,
+        cash_and_short_term_investments_pct: float | None = None,
+        receivables_pct: float | None = None,
+        inventories_pct: float | None = None,
+        payable_pct: float | None = None,
+        ebit_pct: float | None = None,
+        capital_expenditure_pct: float | None = None,
+        operating_cash_flow_pct: float | None = None,
+        selling_general_and_administrative_expenses_pct: float | None = None,
+        tax_rate: float | None = None,
+        long_term_growth_rate: float | None = None,
+        cost_of_debt: float | None = None,
+        cost_of_equity: float | None = None,
+        market_risk_premium: float | None = None,
+        beta: float | None = None,
+        risk_free_rate: float | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get custom levered DCF analysis with detailed financial parameters
 
@@ -222,7 +226,9 @@ class DiscountedCashFlowCategory:
         if depreciation_and_amortization_pct is not None:
             params["depreciationAndAmortizationPct"] = depreciation_and_amortization_pct
         if cash_and_short_term_investments_pct is not None:
-            params["cashAndShortTermInvestmentsPct"] = cash_and_short_term_investments_pct
+            params["cashAndShortTermInvestmentsPct"] = (
+                cash_and_short_term_investments_pct
+            )
         if receivables_pct is not None:
             params["receivablesPct"] = receivables_pct
         if inventories_pct is not None:
@@ -236,7 +242,9 @@ class DiscountedCashFlowCategory:
         if operating_cash_flow_pct is not None:
             params["operatingCashFlowPct"] = operating_cash_flow_pct
         if selling_general_and_administrative_expenses_pct is not None:
-            params["sellingGeneralAndAdministrativeExpensesPct"] = selling_general_and_administrative_expenses_pct
+            params["sellingGeneralAndAdministrativeExpensesPct"] = (
+                selling_general_and_administrative_expenses_pct
+            )
         if tax_rate is not None:
             params["taxRate"] = tax_rate
         if long_term_growth_rate is not None:
@@ -252,4 +260,6 @@ class DiscountedCashFlowCategory:
         if risk_free_rate is not None:
             params["riskFreeRate"] = risk_free_rate
 
-        return await self._client._make_request("custom-levered-discounted-cash-flow", params)
+        return await self._client._make_request(
+            "custom-levered-discounted-cash-flow", params
+        )

@@ -5,7 +5,7 @@ This module provides cryptocurrency functionality including cryptocurrency list,
 historical price data, and intraday charts for various digital assets.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -22,7 +22,7 @@ class CryptoCategory:
         """
         self._client = client
 
-    async def cryptocurrency_list(self) -> List[Dict[str, Any]]:
+    async def cryptocurrency_list(self) -> list[dict[str, Any]]:
         """
         Get comprehensive list of all cryptocurrencies traded on exchanges worldwide
 
@@ -37,7 +37,7 @@ class CryptoCategory:
         """
         return await self._client._make_request("cryptocurrency-list", {})
 
-    async def quote(self, symbol: str) -> List[Dict[str, Any]]:
+    async def quote(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get real-time quotes for cryptocurrencies with comprehensive data
 
@@ -56,7 +56,7 @@ class CryptoCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("quote", params)
 
-    async def quote_short(self, symbol: str) -> List[Dict[str, Any]]:
+    async def quote_short(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get fast and accurate quotes for cryptocurrencies
 
@@ -75,7 +75,7 @@ class CryptoCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("quote-short", params)
 
-    async def batch_quotes(self, short: bool = True) -> List[Dict[str, Any]]:
+    async def batch_quotes(self, short: bool = True) -> list[dict[str, Any]]:
         """
         Get live price data for a wide range of cryptocurrencies
 
@@ -95,11 +95,8 @@ class CryptoCategory:
         return await self._client._make_request("batch-crypto-quotes", params)
 
     async def historical_price_light(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get historical end-of-day prices for cryptocurrencies (light version)
 
@@ -126,11 +123,8 @@ class CryptoCategory:
         return await self._client._make_request("historical-price-eod/light", params)
 
     async def historical_price_full(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get comprehensive historical end-of-day price data for cryptocurrencies
 
@@ -157,11 +151,8 @@ class CryptoCategory:
         return await self._client._make_request("historical-price-eod/full", params)
 
     async def intraday_1min(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get 1-minute interval intraday data for cryptocurrencies
 
@@ -188,11 +179,8 @@ class CryptoCategory:
         return await self._client._make_request("historical-chart/1min", params)
 
     async def intraday_5min(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get 5-minute interval intraday data for cryptocurrencies
 
@@ -219,11 +207,8 @@ class CryptoCategory:
         return await self._client._make_request("historical-chart/5min", params)
 
     async def intraday_1hour(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get 1-hour interval intraday data for cryptocurrencies
 

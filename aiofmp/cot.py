@@ -5,7 +5,7 @@ This module provides COT functionality including comprehensive COT reports,
 market sentiment analysis, and available COT symbols for commodities and futures.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,11 +23,8 @@ class CommitmentOfTradersCategory:
         self._client = client
 
     async def cot_report(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get comprehensive Commitment of Traders (COT) reports
 
@@ -54,11 +51,8 @@ class CommitmentOfTradersCategory:
         return await self._client._make_request("commitment-of-traders-report", params)
 
     async def cot_analysis(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get COT analysis with market sentiment insights
 
@@ -82,9 +76,11 @@ class CommitmentOfTradersCategory:
         if to_date is not None:
             params["to"] = to_date
 
-        return await self._client._make_request("commitment-of-traders-analysis", params)
+        return await self._client._make_request(
+            "commitment-of-traders-analysis", params
+        )
 
-    async def cot_list(self) -> List[Dict[str, Any]]:
+    async def cot_list(self) -> list[dict[str, Any]]:
         """
         Get list of available COT report symbols
 

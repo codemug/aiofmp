@@ -7,7 +7,7 @@ including session management, rate limiting, and error handling.
 
 import asyncio
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import urlencode
 
 import aiohttp
@@ -17,21 +17,25 @@ logger = logging.getLogger(__name__)
 
 class FMPError(Exception):
     """Base exception for FMP API errors"""
+
     pass
 
 
 class FMPAuthenticationError(FMPError):
     """Raised when authentication fails (invalid API key)"""
+
     pass
 
 
 class FMPRateLimitError(FMPError):
     """Raised when rate limit is exceeded"""
+
     pass
 
 
 class FMPResponseError(FMPError):
     """Raised when the API returns an error response"""
+
     pass
 
 
@@ -39,13 +43,13 @@ class FMPBaseClient:
     """Base client for FMP API with common functionality"""
 
     def __init__(
-            self,
-            api_key: str,
-            base_url: str = "https://financialmodelingprep.com/stable",
-            timeout: int = 60,
-            max_retries: int = 3,
-            retry_delay: float = 1.0,
-            max_concurrent_requests: int = 10
+        self,
+        api_key: str,
+        base_url: str = "https://financialmodelingprep.com/stable",
+        timeout: int = 60,
+        max_retries: int = 3,
+        retry_delay: float = 1.0,
+        max_concurrent_requests: int = 10,
     ):
         """
         Initialize the FMP base client
@@ -62,14 +66,14 @@ class FMPBaseClient:
             raise ValueError("API key is required")
 
         self.api_key = api_key
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.max_concurrent_requests = max_concurrent_requests
 
         # Session management
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: aiohttp.ClientSession | None = None
         self._session_owner = True
 
         # Rate limiting
@@ -103,10 +107,7 @@ class FMPBaseClient:
             logger.debug("FMP client session closed")
 
     async def _make_request(
-            self,
-            endpoint: str,
-            params: Optional[Dict[str, Any]] = None,
-            method: str = "GET"
+        self, endpoint: str, params: dict[str, Any] | None = None, method: str = "GET"
     ) -> Any:
         """
         Make an HTTP request to the FMP API
@@ -123,14 +124,16 @@ class FMPBaseClient:
             FMPError: For various API errors
         """
         if self._session is None:
-            raise RuntimeError("Client session not initialized. Use async context manager or call start()")
+            raise RuntimeError(
+                "Client session not initialized. Use async context manager or call start()"
+            )
 
         # Prepare parameters
         if params is None:
             params = {}
 
         # Always include API key
-        params['apikey'] = self.api_key
+        params["apikey"] = self.api_key
 
         # Build full URL
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
@@ -145,32 +148,46 @@ class FMPBaseClient:
             for attempt in range(self.max_retries + 1):
                 try:
                     if method.upper() == "GET":
-                        async with self._session.get(url, params=params, headers=headers) as response:
+                        async with self._session.get(
+                            url, params=params, headers=headers
+                        ) as response:
                             return await self._handle_response(response)
                     elif method.upper() == "POST":
-                        async with self._session.post(url, json=params, headers=headers) as response:
+                        async with self._session.post(
+                            url, json=params, headers=headers
+                        ) as response:
                             return await self._handle_response(response)
                     else:
                         raise ValueError(f"Unsupported HTTP method: {method}")
 
-                except asyncio.TimeoutError:
+                except asyncio.TimeoutError as e:
                     if attempt == self.max_retries:
-                        raise FMPError(f"Request timeout after {self.max_retries + 1} attempts")
-                    logger.warning(f"Request timeout, attempt {attempt + 1}/{self.max_retries + 1}")
+                        raise FMPError(
+                            f"Request timeout after {self.max_retries + 1} attempts"
+                        ) from e
+                    logger.warning(
+                        f"Request timeout, attempt {attempt + 1}/{self.max_retries + 1}"
+                    )
 
                 except aiohttp.ClientError as e:
                     if attempt == self.max_retries:
-                        raise FMPError(f"HTTP client error: {e}")
-                    logger.warning(f"HTTP client error, attempt {attempt + 1}/{self.max_retries + 1}: {e}")
+                        raise FMPError(f"HTTP client error: {e}") from e
+                    logger.warning(
+                        f"HTTP client error, attempt {attempt + 1}/{self.max_retries + 1}: {e}"
+                    )
 
                 except Exception as e:
                     if attempt == self.max_retries:
                         raise e
-                    logger.warning(f"Request failed, attempt {attempt + 1}/{self.max_retries + 1}: {e}")
+                    logger.warning(
+                        f"Request failed, attempt {attempt + 1}/{self.max_retries + 1}: {e}"
+                    )
 
                 # Wait before retry (except on last attempt)
                 if attempt < self.max_retries:
-                    await asyncio.sleep(self.retry_delay * (2 ** attempt))  # Exponential backoff
+                    await asyncio.sleep(
+                        self.retry_delay * (2**attempt)
+                    )  # Exponential backoff
 
     async def _handle_response(self, response: aiohttp.ClientResponse) -> Any:
         """
@@ -196,7 +213,7 @@ class FMPBaseClient:
                 return data
 
             except Exception as e:
-                raise FMPError(f"Failed to parse response: {e}")
+                raise FMPError(f"Failed to parse response: {e}") from e
 
         elif response.status == 401:
             raise FMPAuthenticationError("Invalid API key or authentication failed")
@@ -207,7 +224,7 @@ class FMPBaseClient:
         else:
             raise FMPError(f"HTTP {response.status}: {response.reason}")
 
-    def _build_url(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> str:
+    def _build_url(self, endpoint: str, params: dict[str, Any] | None = None) -> str:
         """
         Build a complete URL with query parameters
 

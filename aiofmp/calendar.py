@@ -5,7 +5,7 @@ This module provides calendar functionality including dividends, earnings, IPOs,
 stock splits, and related calendar events across different time periods.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,10 +23,8 @@ class CalendarCategory:
         self._client = client
 
     async def dividends_company(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get dividend information for a specific company
 
@@ -50,10 +48,8 @@ class CalendarCategory:
         return await self._client._make_request("dividends", params)
 
     async def dividends_calendar(
-            self,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get dividend calendar for all stocks within a date range
 
@@ -79,10 +75,8 @@ class CalendarCategory:
         return await self._client._make_request("dividends-calendar", params)
 
     async def earnings_company(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get earnings information for a specific company
 
@@ -106,10 +100,8 @@ class CalendarCategory:
         return await self._client._make_request("earnings", params)
 
     async def earnings_calendar(
-            self,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get earnings calendar for all companies within a date range
 
@@ -135,10 +127,8 @@ class CalendarCategory:
         return await self._client._make_request("earnings-calendar", params)
 
     async def ipos_calendar(
-            self,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get IPO calendar for upcoming initial public offerings
 
@@ -164,10 +154,8 @@ class CalendarCategory:
         return await self._client._make_request("ipos-calendar", params)
 
     async def ipos_disclosure(
-            self,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get IPO disclosure filings for upcoming initial public offerings
 
@@ -193,10 +181,8 @@ class CalendarCategory:
         return await self._client._make_request("ipos-disclosure", params)
 
     async def ipos_prospectus(
-            self,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get IPO prospectus information for upcoming initial public offerings
 
@@ -222,10 +208,8 @@ class CalendarCategory:
         return await self._client._make_request("ipos-prospectus", params)
 
     async def stock_splits_company(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get stock split information for a specific company
 
@@ -249,10 +233,8 @@ class CalendarCategory:
         return await self._client._make_request("splits", params)
 
     async def stock_splits_calendar(
-            self,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get stock splits calendar for all companies within a date range
 

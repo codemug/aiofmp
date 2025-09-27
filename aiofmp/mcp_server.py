@@ -9,12 +9,8 @@ import asyncio
 import logging
 import os
 import sys
-from typing import Any, Dict, Optional
 
 from fastmcp import FastMCP
-
-from .base import FMPError, FMPAuthenticationError, FMPRateLimitError, FMPResponseError
-from .fmp_client import get_fmp_client, reset_fmp_client
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,29 +24,31 @@ def register_tools():
     """Register all MCP tools from the various modules."""
     try:
         # Import and register tools from each category
-        from . import search_tools
-        from . import chart_tools
-        from . import company_tools
-        from . import calendar_tools
-        from . import analyst_tools
-        from . import directory_tools
-        from . import cot_tools
-        from . import dcf_tools
-        from . import economics_tools
-        from . import etf_tools
-        from . import commodity_tools
-        from . import crypto_tools
-        from . import forex_tools
-        from . import statements_tools
-        from . import form13f_tools
-        from . import indexes_tools
-        from . import insider_trades_tools
-        from . import market_performance_tools
-        from . import news_tools
-        from . import technical_indicators_tools
-        from . import quote_tools
-        from . import senate_tools
-        
+        from . import (  # noqa: F401
+            analyst_tools,
+            calendar_tools,
+            chart_tools,
+            commodity_tools,
+            company_tools,
+            cot_tools,
+            crypto_tools,
+            dcf_tools,
+            directory_tools,
+            economics_tools,
+            etf_tools,
+            forex_tools,
+            form13f_tools,
+            indexes_tools,
+            insider_trades_tools,
+            market_performance_tools,
+            news_tools,
+            quote_tools,
+            search_tools,
+            senate_tools,
+            statements_tools,
+            technical_indicators_tools,
+        )
+
         logger.info("Successfully registered all MCP tools")
     except ImportError as e:
         logger.error(f"Failed to import tool modules: {e}")
@@ -69,7 +67,7 @@ def setup_error_handling():
 
 async def run_server():
     """Run the MCP server with the specified transport.
-    
+
     This function uses FastMCP's run_async method to avoid asyncio event loop conflicts
     that can occur when using the synchronous run method in certain environments.
     """
@@ -78,21 +76,23 @@ async def run_server():
         transport = os.getenv("MCP_TRANSPORT", "stdio").lower()
         host = os.getenv("MCP_HOST", "localhost")
         port = int(os.getenv("MCP_PORT", "3000"))
-        
+
         # Validate API key
         api_key = os.getenv("FMP_API_KEY")
         if not api_key:
             logger.error("FMP_API_KEY environment variable is required")
             sys.exit(1)
             return  # This line will never be reached, but helps with static analysis
-        
+
         # Register tools and setup error handling
         register_tools()
         setup_error_handling()
-        
+
         logger.info(f"Starting FMP MCP Server with {transport} transport")
-        logger.info(f"API Key: {'*' * (len(api_key) - 4) + api_key[-4:] if len(api_key) > 4 else '****'}")
-        
+        logger.info(
+            f"API Key: {'*' * (len(api_key) - 4) + api_key[-4:] if len(api_key) > 4 else '****'}"
+        )
+
         # Run the server based on transport type
         if transport == "http":
             logger.info(f"Starting HTTP server on {host}:{port}")
@@ -100,7 +100,7 @@ async def run_server():
         else:
             logger.info("Starting STDIO server")
             await mcp.run_async(transport="stdio")
-            
+
     except KeyboardInterrupt:
         logger.info("Server stopped by user")
     except Exception as e:

@@ -5,7 +5,7 @@ This module provides financial statement functionality including income statemen
 balance sheets, cash flow statements, key metrics, financial ratios, and growth analysis.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,11 +23,8 @@ class StatementsCategory:
         self._client = client
 
     async def income_statement(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get income statement data for a company
 
@@ -54,11 +51,8 @@ class StatementsCategory:
         return await self._client._make_request("income-statement", params)
 
     async def balance_sheet_statement(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get balance sheet statement data for a company
 
@@ -85,11 +79,8 @@ class StatementsCategory:
         return await self._client._make_request("balance-sheet-statement", params)
 
     async def cash_flow_statement(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get cash flow statement data for a company
 
@@ -116,11 +107,8 @@ class StatementsCategory:
         return await self._client._make_request("cash-flow-statement", params)
 
     async def key_metrics(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get key financial metrics for a company
 
@@ -147,11 +135,8 @@ class StatementsCategory:
         return await self._client._make_request("key-metrics", params)
 
     async def financial_ratios(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get financial ratios for a company
 
@@ -177,10 +162,7 @@ class StatementsCategory:
 
         return await self._client._make_request("ratios", params)
 
-    async def financial_scores(
-            self,
-            symbol: str
-    ) -> List[Dict[str, Any]]:
+    async def financial_scores(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get financial health scores for a company
 
@@ -200,10 +182,8 @@ class StatementsCategory:
         return await self._client._make_request("financial-scores", params)
 
     async def owner_earnings(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get owner earnings data for a company
 
@@ -227,11 +207,8 @@ class StatementsCategory:
         return await self._client._make_request("owner-earnings", params)
 
     async def enterprise_values(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get enterprise value data for a company
 
@@ -258,11 +235,8 @@ class StatementsCategory:
         return await self._client._make_request("enterprise-values", params)
 
     async def income_statement_growth(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get income statement growth metrics for a company
 
@@ -289,11 +263,8 @@ class StatementsCategory:
         return await self._client._make_request("income-statement-growth", params)
 
     async def balance_sheet_statement_growth(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get balance sheet statement growth metrics for a company
 
@@ -317,14 +288,13 @@ class StatementsCategory:
         if period is not None:
             params["period"] = period
 
-        return await self._client._make_request("balance-sheet-statement-growth", params)
+        return await self._client._make_request(
+            "balance-sheet-statement-growth", params
+        )
 
     async def cash_flow_statement_growth(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get cash flow statement growth metrics for a company
 
@@ -351,11 +321,8 @@ class StatementsCategory:
         return await self._client._make_request("cash-flow-statement-growth", params)
 
     async def financial_statement_growth(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            period: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None, period: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get comprehensive financial statement growth metrics for a company
 
@@ -382,11 +349,8 @@ class StatementsCategory:
         return await self._client._make_request("financial-growth", params)
 
     async def revenue_product_segmentation(
-            self,
-            symbol: str,
-            period: Optional[str] = None,
-            structure: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, period: str | None = None, structure: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get revenue breakdown by product line for a company
 
@@ -413,11 +377,8 @@ class StatementsCategory:
         return await self._client._make_request("revenue-product-segmentation", params)
 
     async def revenue_geographic_segmentation(
-            self,
-            symbol: str,
-            period: Optional[str] = None,
-            structure: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, period: str | None = None, structure: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get revenue breakdown by geographic region for a company
 
@@ -441,4 +402,6 @@ class StatementsCategory:
         if structure is not None:
             params["structure"] = structure
 
-        return await self._client._make_request("revenue-geographic-segmentation", params)
+        return await self._client._make_request(
+            "revenue-geographic-segmentation", params
+        )
