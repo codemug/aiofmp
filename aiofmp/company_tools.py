@@ -17,7 +17,7 @@ from .mcp_tools import (
     format_currency,
     format_large_number
 )
-from .mcp_server import get_fmp_client
+from .fmp_client import get_fmp_client
 
 logger = logging.getLogger(__name__)
 
