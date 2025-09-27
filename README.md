@@ -58,13 +58,13 @@ from aiofmp import FmpClient
 async def main():
     # Initialize client with your API key
     client = FmpClient(api_key="your_api_key_here")
-    
+
     # Use async context manager for automatic session management
     async with client:
         # Search for symbols
         symbols = await client.search.symbols("AAPL", limit=10)
         print(f"Found {len(symbols)} symbols")
-        
+
         # Get company profile
         profile = await client.company.profile("AAPL")
         print(f"Company: {profile['companyName']}")
@@ -396,6 +396,92 @@ uv run pytest --cov=aiofmp --cov-report=html
 - **No Hardcoded Secrets**: All sensitive data via configuration
 - **HTTPS Only**: All API communications over secure connections
 
+## Release Process
+
+This project uses [Semantic Release](https://semantic-release.gitbook.io/) for automated versioning and publishing. The release process is fully automated through GitHub Actions.
+
+### How It Works
+
+1. **Conventional Commits**: All commits must follow the [Conventional Commits](https://conventionalcommits.org/) specification
+2. **Automatic Versioning**: Semantic Release analyzes commit messages to determine the next version
+3. **Automatic Publishing**: When a new version is detected, it automatically:
+   - Creates a git tag
+   - Updates the CHANGELOG.md
+   - Publishes to PyPI
+   - Creates a GitHub release
+
+### Commit Message Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Types:**
+- `feat`: New features
+- `fix`: Bug fixes
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring
+- `perf`: Performance improvements
+- `test`: Test additions or changes
+- `chore`: Build process or auxiliary tool changes
+
+**Examples:**
+```bash
+feat(mcp): add new search tools for financial data
+fix(api): resolve authentication error in client
+docs: update installation instructions
+test: add unit tests for MCP server
+chore: update dependencies
+```
+
+### Setting Up Releases
+
+1. **Configure Git** (run once):
+   ```bash
+   ./scripts/setup-git.sh
+   ```
+
+2. **Set up PyPI Token**:
+   - Go to [PyPI Account Settings](https://pypi.org/manage/account/)
+   - Create an API token
+   - Add it to GitHub Secrets as `PYPI_API_TOKEN`
+
+3. **Update Repository URLs**:
+   - Update URLs in `pyproject.toml` and `package.json`
+   - Update author information
+
+4. **Make Changes and Commit**:
+   ```bash
+   git add .
+   git commit -m "feat: add new feature"
+   git push origin main
+   ```
+
+The GitHub Action will automatically:
+- Run quick tests and linting
+- Check code quality
+- Determine if a release is needed
+- Create a new version and publish to PyPI
+
+### Manual Testing
+
+For comprehensive testing, you can manually trigger the test workflow:
+
+1. Go to the "Actions" tab in your GitHub repository
+2. Select the "Test" workflow
+3. Click "Run workflow"
+4. Choose:
+   - **Python version**: 3.8, 3.9, 3.10, 3.11, 3.12, or 3.13
+   - **Test type**: all, unit, mcp, or integration
+5. Click "Run workflow"
+
+This allows you to run tests on specific Python versions or test categories without using your free tier minutes unnecessarily.
+
 ## Contributing
 
 Contributions are welcome! We appreciate any help in improving aiofmp.
@@ -447,7 +533,7 @@ Please report bugs and request features through GitHub Issues. Include:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 

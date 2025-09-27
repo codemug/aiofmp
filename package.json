@@ -1,0 +1,27 @@
+{
+  "name": "aiofmp",
+  "version": "0.1.0",
+  "description": "Asynchronous Financial Modeling Prep API Client with MCP Server",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codemug/aiofmp.git"
+  },
+  "keywords": [
+    "financial",
+    "api",
+    "async",
+    "mcp",
+    "model-context-protocol",
+    "financial-modeling-prep",
+    "stocks",
+    "crypto",
+    "forex"
+  ],
+  "author": "codemug <u.manshahid@gmail.com>",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/codemug/aiofmp/issues"
+  },
+  "homepage": "https://github.com/codemug/aiofmp#readme"
+}
