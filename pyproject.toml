@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Asynchronous Financial Modeling Prep API Client with MCP Server"
 readme = "README.md"
 license = {text = "Apache 2.0"}
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 authors = [
     {name = "codemug", email = "u.manshahid@gmail.com"}
 ]
@@ -26,11 +26,8 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Financial and Insurance Industry",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -40,20 +37,22 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     "Typing :: Typed",
 ]
-[project.urls]
-Homepage = "https://github.com/codemug/aiofmp"
-Documentation = "https://github.com/codemug/aiofmp#readme"
-Repository = "https://github.com/codemug/aiofmp.git"
-Issues = "https://github.com/codemug/aiofmp/issues"
 
 dependencies = [
     "aiohttp>=3.12.15",
     "fastmcp>=2.0.0",
     "click>=8.0.0",
+    "nest-asyncio>=1.6.0",
     "pytest>=8.4.1",
     "pytest-asyncio>=1.1.0",
     "pytest-cov>=5.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/codemug/aiofmp"
+Documentation = "https://github.com/codemug/aiofmp#readme"
+Repository = "https://github.com/codemug/aiofmp.git"
+Issues = "https://github.com/codemug/aiofmp/issues"
 
 [project.optional-dependencies]
 dev = [
