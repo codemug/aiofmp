@@ -68,7 +68,11 @@ def setup_error_handling():
 
 
 async def run_server():
-    """Run the MCP server with the specified transport."""
+    """Run the MCP server with the specified transport.
+    
+    This function uses FastMCP's run_async method to avoid asyncio event loop conflicts
+    that can occur when using the synchronous run method in certain environments.
+    """
     try:
         # Get configuration from environment variables
         transport = os.getenv("MCP_TRANSPORT", "stdio").lower()
@@ -92,10 +96,10 @@ async def run_server():
         # Run the server based on transport type
         if transport == "http":
             logger.info(f"Starting HTTP server on {host}:{port}")
-            await mcp.run(transport="http", host=host, port=port)
+            await mcp.run_async(transport="http", host=host, port=port)
         else:
             logger.info("Starting STDIO server")
-            await mcp.run(transport="stdio")
+            await mcp.run_async(transport="stdio")
             
     except KeyboardInterrupt:
         logger.info("Server stopped by user")

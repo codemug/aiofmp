@@ -220,8 +220,8 @@ async def get_crypto_historical_price_light(
     try:
         # Validate inputs
         validated_symbol = validate_symbol(symbol)
-        validated_from_date = validate_date(from_date)
-        validated_to_date = validate_date(to_date)
+        validated_from_date = validate_date(from_date) if from_date else None
+        validated_to_date = validate_date(to_date) if to_date else None
         
         # Get FMP client and fetch data
         client = get_fmp_client()

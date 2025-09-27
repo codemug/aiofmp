@@ -24,7 +24,7 @@
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.10 or higher
 - Financial Modeling Prep API key ([Get one here](https://site.financialmodelingprep.com/developer/docs/pricing))
 
 ### Install from Source
@@ -476,7 +476,7 @@ For comprehensive testing, you can manually trigger the test workflow:
 2. Select the "Test" workflow
 3. Click "Run workflow"
 4. Choose:
-   - **Python version**: 3.8, 3.9, 3.10, 3.11, 3.12, or 3.13
+   - **Python version**: 3.10, 3.11, 3.12, or 3.13
    - **Test type**: all, unit, mcp, or integration
 5. Click "Run workflow"
 
