@@ -76,16 +76,19 @@ jobs:
         run: |
           uv build
 
+      - name: Install Node.js dependencies
+        run: npm install
+
       - name: Semantic Release
         id: semantic-release
-        uses: cycjimmy/semantic-release-action@v4
-        with:
-          semantic_version: 21.4.0
-          extra_plugins: |
-            @semantic-release/changelog@6.0.3
-            @semantic-release/git@10.0.1
-            @semantic-release/github@9.2.6
-            @semantic-release/exec@6.0.3
+        run: |
+          output=$(npx semantic-release --dry-run=false 2>&1)
+          echo "$output"
+          if echo "$output" | grep -q "Published release"; then
+            echo "new-release-published=true" >> $GITHUB_OUTPUT
+          else
+            echo "new-release-published=false" >> $GITHUB_OUTPUT
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
