@@ -5,8 +5,8 @@ This module provides news functionality including FMP articles, general news, pr
 stock news, crypto news, forex news, and search capabilities across all news types.
 """
 
-from typing import Any, Dict, List, Optional
 from datetime import date
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -24,10 +24,8 @@ class NewsCategory:
         self._client = client
 
     async def fmp_articles(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, page: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get the latest articles from Financial Modeling Prep
 
@@ -53,12 +51,12 @@ class NewsCategory:
         return await self._client._make_request("fmp-articles", params)
 
     async def general_news(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        page: int | None = None,
+        limit: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get the latest general news articles from various sources
 
@@ -90,12 +88,12 @@ class NewsCategory:
         return await self._client._make_request("news/general-latest", params)
 
     async def press_releases(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        page: int | None = None,
+        limit: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get the latest company press releases
 
@@ -127,12 +125,12 @@ class NewsCategory:
         return await self._client._make_request("news/press-releases-latest", params)
 
     async def stock_news(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        page: int | None = None,
+        limit: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get the latest stock market news
 
@@ -164,12 +162,12 @@ class NewsCategory:
         return await self._client._make_request("news/stock-latest", params)
 
     async def crypto_news(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        page: int | None = None,
+        limit: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get the latest cryptocurrency news
 
@@ -201,12 +199,12 @@ class NewsCategory:
         return await self._client._make_request("news/crypto-latest", params)
 
     async def forex_news(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        page: int | None = None,
+        limit: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get the latest forex news articles
 
@@ -238,13 +236,13 @@ class NewsCategory:
         return await self._client._make_request("news/forex-latest", params)
 
     async def search_press_releases(
-            self,
-            symbols: str,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbols: str,
+        page: int | None = None,
+        limit: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Search for company press releases by symbol
 
@@ -277,13 +275,13 @@ class NewsCategory:
         return await self._client._make_request("news/press-releases", params)
 
     async def search_stock_news(
-            self,
-            symbols: str,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbols: str,
+        page: int | None = None,
+        limit: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Search for stock-related news by symbol
 
@@ -316,13 +314,13 @@ class NewsCategory:
         return await self._client._make_request("news/stock", params)
 
     async def search_crypto_news(
-            self,
-            symbols: str,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbols: str,
+        page: int | None = None,
+        limit: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Search for cryptocurrency news by symbol
 
@@ -355,13 +353,13 @@ class NewsCategory:
         return await self._client._make_request("news/crypto", params)
 
     async def search_forex_news(
-            self,
-            symbols: str,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbols: str,
+        page: int | None = None,
+        limit: int | None = None,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Search for forex news by currency pair symbol
 

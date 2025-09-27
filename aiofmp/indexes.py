@@ -5,8 +5,8 @@ This module provides stock market index functionality including index lists, quo
 historical data, and intraday charts for various time intervals.
 """
 
-from typing import Any, Dict, List, Optional
 from datetime import date
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,7 +23,7 @@ class IndexesCategory:
         """
         self._client = client
 
-    async def index_list(self) -> List[Dict[str, Any]]:
+    async def index_list(self) -> list[dict[str, Any]]:
         """
         Get a comprehensive list of stock market indexes across global exchanges
 
@@ -38,7 +38,7 @@ class IndexesCategory:
         """
         return await self._client._make_request("index-list")
 
-    async def index_quote(self, symbol: str) -> List[Dict[str, Any]]:
+    async def index_quote(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get real-time stock index quotes with comprehensive market data
 
@@ -57,7 +57,7 @@ class IndexesCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("quote", params)
 
-    async def index_quote_short(self, symbol: str) -> List[Dict[str, Any]]:
+    async def index_quote_short(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get concise stock index quotes with essential price and volume data
 
@@ -76,7 +76,7 @@ class IndexesCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("quote-short", params)
 
-    async def all_index_quotes(self, short: Optional[bool] = None) -> List[Dict[str, Any]]:
+    async def all_index_quotes(self, short: bool | None = None) -> list[dict[str, Any]]:
         """
         Get real-time quotes for a wide range of stock indexes
 
@@ -99,11 +99,8 @@ class IndexesCategory:
         return await self._client._make_request("batch-index-quotes", params)
 
     async def historical_price_eod_light(
-            self,
-            symbol: str,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: date | None = None, to_date: date | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get end-of-day historical prices for stock indexes (light version)
 
@@ -130,11 +127,8 @@ class IndexesCategory:
         return await self._client._make_request("historical-price-eod/light", params)
 
     async def historical_price_eod_full(
-            self,
-            symbol: str,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: date | None = None, to_date: date | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get full end-of-day historical prices for stock indexes with comprehensive data
 
@@ -161,11 +155,8 @@ class IndexesCategory:
         return await self._client._make_request("historical-price-eod/full", params)
 
     async def intraday_1min(
-            self,
-            symbol: str,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: date | None = None, to_date: date | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get 1-minute interval intraday data for stock indexes
 
@@ -192,11 +183,8 @@ class IndexesCategory:
         return await self._client._make_request("historical-chart/1min", params)
 
     async def intraday_5min(
-            self,
-            symbol: str,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: date | None = None, to_date: date | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get 5-minute interval intraday data for stock indexes
 
@@ -223,11 +211,8 @@ class IndexesCategory:
         return await self._client._make_request("historical-chart/5min", params)
 
     async def intraday_1hour(
-            self,
-            symbol: str,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: date | None = None, to_date: date | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get 1-hour interval intraday data for stock indexes
 

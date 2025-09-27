@@ -5,7 +5,7 @@ This module provides search functionality including symbol search, company name 
 and stock screening capabilities.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,11 +23,8 @@ class SearchCategory:
         self._client = client
 
     async def symbols(
-            self,
-            query: str,
-            limit: Optional[int] = None,
-            exchange: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, query: str, limit: int | None = None, exchange: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Search for stock symbols by query
 
@@ -54,11 +51,8 @@ class SearchCategory:
         return await self._client._make_request("search-symbol", params)
 
     async def companies(
-            self,
-            query: str,
-            limit: Optional[int] = None,
-            exchange: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, query: str, limit: int | None = None, exchange: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Search for companies by name
 
@@ -85,28 +79,28 @@ class SearchCategory:
         return await self._client._make_request("search-name", params)
 
     async def screener(
-            self,
-            *,
-            market_cap_more_than: Optional[float] = None,
-            market_cap_lower_than: Optional[float] = None,
-            sector: Optional[str] = None,
-            industry: Optional[str] = None,
-            beta_more_than: Optional[float] = None,
-            beta_lower_than: Optional[float] = None,
-            price_more_than: Optional[float] = None,
-            price_lower_than: Optional[float] = None,
-            dividend_more_than: Optional[float] = None,
-            dividend_lower_than: Optional[float] = None,
-            volume_more_than: Optional[int] = None,
-            volume_lower_than: Optional[int] = None,
-            exchange: Optional[str] = None,
-            country: Optional[str] = None,
-            is_etf: Optional[bool] = None,
-            is_fund: Optional[bool] = None,
-            is_actively_trading: Optional[bool] = None,
-            limit: Optional[int] = None,
-            include_all_share_classes: Optional[bool] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        *,
+        market_cap_more_than: float | None = None,
+        market_cap_lower_than: float | None = None,
+        sector: str | None = None,
+        industry: str | None = None,
+        beta_more_than: float | None = None,
+        beta_lower_than: float | None = None,
+        price_more_than: float | None = None,
+        price_lower_than: float | None = None,
+        dividend_more_than: float | None = None,
+        dividend_lower_than: float | None = None,
+        volume_more_than: int | None = None,
+        volume_lower_than: int | None = None,
+        exchange: str | None = None,
+        country: str | None = None,
+        is_etf: bool | None = None,
+        is_fund: bool | None = None,
+        is_actively_trading: bool | None = None,
+        limit: int | None = None,
+        include_all_share_classes: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Screen stocks based on various criteria
 

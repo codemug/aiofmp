@@ -5,36 +5,42 @@ This module provides a comprehensive async client for the FMP API with
 category-based organization for better code management.
 """
 
-from .base import FMPBaseClient, FMPError, FMPAuthenticationError, FMPRateLimitError, FMPResponseError
-from .search import SearchCategory
-from .directory import DirectoryCategory
 from .analyst import AnalystCategory
+from .base import (
+    FMPAuthenticationError,
+    FMPBaseClient,
+    FMPError,
+    FMPRateLimitError,
+    FMPResponseError,
+)
 from .calendar import CalendarCategory
 from .chart import ChartCategory
+from .commodity import CommodityCategory
 from .company import CompanyCategory
 from .cot import CommitmentOfTradersCategory
+from .crypto import CryptoCategory
 from .dcf import DiscountedCashFlowCategory
+from .directory import DirectoryCategory
 from .economics import EconomicsCategory
 from .etf import EtfAndMutualFundsCategory
-from .commodity import CommodityCategory
-from .crypto import CryptoCategory
 from .forex import ForexCategory
-from .statements import StatementsCategory
 from .form13f import Form13FCategory
 from .indexes import IndexesCategory
 from .insider_trades import InsiderTradesCategory
 from .market_performance import MarketPerformanceCategory
 from .news import NewsCategory
-from .technical_indicators import TechnicalIndicatorsCategory
 from .quote import QuoteCategory
+from .search import SearchCategory
 from .senate import SenateCategory
+from .statements import StatementsCategory
+from .technical_indicators import TechnicalIndicatorsCategory
 
 __all__ = [
     "FmpClient",
     "FMPError",
     "FMPAuthenticationError",
     "FMPRateLimitError",
-    "FMPResponseError"
+    "FMPResponseError",
 ]
 
 

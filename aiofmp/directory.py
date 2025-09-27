@@ -6,7 +6,7 @@ ETFs, actively trading lists, earnings transcripts, and available exchanges, sec
 industries, and countries.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,7 +23,7 @@ class DirectoryCategory:
         """
         self._client = client
 
-    async def company_symbols(self) -> List[Dict[str, Any]]:
+    async def company_symbols(self) -> list[dict[str, Any]]:
         """
         Get a comprehensive list of financial symbols
 
@@ -38,7 +38,7 @@ class DirectoryCategory:
         """
         return await self._client._make_request("company-symbols-list")
 
-    async def financial_symbols(self) -> List[Dict[str, Any]]:
+    async def financial_symbols(self) -> list[dict[str, Any]]:
         """
         Get a list of companies with available financial statements
 
@@ -53,7 +53,7 @@ class DirectoryCategory:
         """
         return await self._client._make_request("financial-symbols-list")
 
-    async def etf_list(self) -> List[Dict[str, Any]]:
+    async def etf_list(self) -> list[dict[str, Any]]:
         """
         Get a list of Exchange Traded Funds (ETFs)
 
@@ -68,7 +68,7 @@ class DirectoryCategory:
         """
         return await self._client._make_request("etf-list")
 
-    async def actively_trading(self) -> List[Dict[str, Any]]:
+    async def actively_trading(self) -> list[dict[str, Any]]:
         """
         Get a list of actively trading companies and financial instruments
 
@@ -83,7 +83,7 @@ class DirectoryCategory:
         """
         return await self._client._make_request("actively-trading-list")
 
-    async def earnings_transcripts(self) -> List[Dict[str, Any]]:
+    async def earnings_transcripts(self) -> list[dict[str, Any]]:
         """
         Get a list of companies with available earnings transcripts
 
@@ -98,7 +98,7 @@ class DirectoryCategory:
         """
         return await self._client._make_request("earnings-transcript-list")
 
-    async def available_exchanges(self) -> List[Dict[str, Any]]:
+    async def available_exchanges(self) -> list[dict[str, Any]]:
         """
         Get a complete list of supported stock exchanges
 
@@ -113,7 +113,7 @@ class DirectoryCategory:
         """
         return await self._client._make_request("available-exchanges")
 
-    async def available_sectors(self) -> List[Dict[str, Any]]:
+    async def available_sectors(self) -> list[dict[str, Any]]:
         """
         Get a complete list of industry sectors
 
@@ -128,7 +128,7 @@ class DirectoryCategory:
         """
         return await self._client._make_request("available-sectors")
 
-    async def available_industries(self) -> List[Dict[str, Any]]:
+    async def available_industries(self) -> list[dict[str, Any]]:
         """
         Get a comprehensive list of industries
 
@@ -143,7 +143,7 @@ class DirectoryCategory:
         """
         return await self._client._make_request("available-industries")
 
-    async def available_countries(self) -> List[Dict[str, Any]]:
+    async def available_countries(self) -> list[dict[str, Any]]:
         """
         Get a comprehensive list of countries where stock symbols are available
 

@@ -5,7 +5,7 @@ This module provides chart functionality including historical price data, intrad
 and various time intervals for stock price and volume analysis.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,11 +23,8 @@ class ChartCategory:
         self._client = client
 
     async def historical_price_light(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get simplified stock chart data (light version)
 
@@ -54,11 +51,8 @@ class ChartCategory:
         return await self._client._make_request("historical-price-eod/light", params)
 
     async def historical_price_full(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get comprehensive stock price and volume data
 
@@ -85,11 +79,8 @@ class ChartCategory:
         return await self._client._make_request("historical-price-eod/full", params)
 
     async def historical_price_unadjusted(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get stock price data without split adjustments
 
@@ -113,14 +104,13 @@ class ChartCategory:
         if to_date is not None:
             params["to"] = to_date
 
-        return await self._client._make_request("historical-price-eod/non-split-adjusted", params)
+        return await self._client._make_request(
+            "historical-price-eod/non-split-adjusted", params
+        )
 
     async def historical_price_dividend_adjusted(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get stock price data with dividend adjustments
 
@@ -144,15 +134,17 @@ class ChartCategory:
         if to_date is not None:
             params["to"] = to_date
 
-        return await self._client._make_request("historical-price-eod/dividend-adjusted", params)
+        return await self._client._make_request(
+            "historical-price-eod/dividend-adjusted", params
+        )
 
     async def intraday_1min(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None,
-            nonadjusted: Optional[bool] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        nonadjusted: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get 1-minute interval intraday stock data
 
@@ -182,12 +174,12 @@ class ChartCategory:
         return await self._client._make_request("historical-chart/1min", params)
 
     async def intraday_5min(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None,
-            nonadjusted: Optional[bool] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        nonadjusted: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get 5-minute interval intraday stock data
 
@@ -217,12 +209,12 @@ class ChartCategory:
         return await self._client._make_request("historical-chart/5min", params)
 
     async def intraday_15min(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None,
-            nonadjusted: Optional[bool] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        nonadjusted: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get 15-minute interval intraday stock data
 
@@ -252,12 +244,12 @@ class ChartCategory:
         return await self._client._make_request("historical-chart/15min", params)
 
     async def intraday_30min(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None,
-            nonadjusted: Optional[bool] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        nonadjusted: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get 30-minute interval intraday stock data
 
@@ -287,12 +279,12 @@ class ChartCategory:
         return await self._client._make_request("historical-chart/30min", params)
 
     async def intraday_1hour(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None,
-            nonadjusted: Optional[bool] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        nonadjusted: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get 1-hour interval intraday stock data
 
@@ -322,12 +314,12 @@ class ChartCategory:
         return await self._client._make_request("historical-chart/1hour", params)
 
     async def intraday_4hour(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None,
-            nonadjusted: Optional[bool] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        nonadjusted: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get 4-hour interval intraday stock data
 

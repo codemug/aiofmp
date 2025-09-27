@@ -2,9 +2,10 @@
 Unit tests for FMP Technical Indicators category
 """
 
-import pytest
-from unittest.mock import AsyncMock, MagicMock
 from datetime import date
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from aiofmp.base import FMPBaseClient
 from aiofmp.technical_indicators import TechnicalIndicatorsCategory
@@ -26,7 +27,9 @@ class TestTechnicalIndicatorsCategory:
         return TechnicalIndicatorsCategory(mock_client)
 
     @pytest.mark.asyncio
-    async def test_simple_moving_average_basic(self, technical_indicators_category, mock_client):
+    async def test_simple_moving_average_basic(
+        self, technical_indicators_category, mock_client
+    ):
         """Test simple moving average with required parameters only"""
         mock_response = [
             {
@@ -36,21 +39,25 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "sma": 231.215
+                "sma": 231.215,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_simple_moving_average_with_dates(self, technical_indicators_category, mock_client):
+    async def test_simple_moving_average_with_dates(
+        self, technical_indicators_category, mock_client
+    ):
         """Test simple moving average with date parameters"""
         mock_response = [{"date": "2025-02-04 00:00:00", "sma": 231.215}]
         mock_client._make_request.return_value = mock_response
@@ -65,11 +72,19 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_exponential_moving_average_basic(self, technical_indicators_category, mock_client):
+    async def test_exponential_moving_average_basic(
+        self, technical_indicators_category, mock_client
+    ):
         """Test exponential moving average with required parameters only"""
         mock_response = [
             {
@@ -79,21 +94,25 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "ema": 232.8406611792779
+                "ema": 232.8406611792779,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.exponential_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.exponential_moving_average(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/ema",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_exponential_moving_average_with_dates(self, technical_indicators_category, mock_client):
+    async def test_exponential_moving_average_with_dates(
+        self, technical_indicators_category, mock_client
+    ):
         """Test exponential moving average with date parameters"""
         mock_response = [{"date": "2025-02-04 00:00:00", "ema": 232.8406611792779}]
         mock_client._make_request.return_value = mock_response
@@ -108,11 +127,19 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/ema",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_weighted_moving_average_basic(self, technical_indicators_category, mock_client):
+    async def test_weighted_moving_average_basic(
+        self, technical_indicators_category, mock_client
+    ):
         """Test weighted moving average with required parameters only"""
         mock_response = [
             {
@@ -122,21 +149,25 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "wma": 233.04745454545454
+                "wma": 233.04745454545454,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.weighted_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.weighted_moving_average(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/wma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_weighted_moving_average_with_dates(self, technical_indicators_category, mock_client):
+    async def test_weighted_moving_average_with_dates(
+        self, technical_indicators_category, mock_client
+    ):
         """Test weighted moving average with date parameters"""
         mock_response = [{"date": "2025-02-04 00:00:00", "wma": 233.04745454545454}]
         mock_client._make_request.return_value = mock_response
@@ -151,11 +182,19 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/wma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_double_exponential_moving_average_basic(self, technical_indicators_category, mock_client):
+    async def test_double_exponential_moving_average_basic(
+        self, technical_indicators_category, mock_client
+    ):
         """Test double exponential moving average with required parameters only"""
         mock_response = [
             {
@@ -165,21 +204,25 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "dema": 232.10592058582725
+                "dema": 232.10592058582725,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.double_exponential_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.double_exponential_moving_average(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/dema",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_double_exponential_moving_average_with_dates(self, technical_indicators_category, mock_client):
+    async def test_double_exponential_moving_average_with_dates(
+        self, technical_indicators_category, mock_client
+    ):
         """Test double exponential moving average with date parameters"""
         mock_response = [{"date": "2025-02-04 00:00:00", "dema": 232.10592058582725}]
         mock_client._make_request.return_value = mock_response
@@ -194,11 +237,19 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/dema",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_triple_exponential_moving_average_basic(self, technical_indicators_category, mock_client):
+    async def test_triple_exponential_moving_average_basic(
+        self, technical_indicators_category, mock_client
+    ):
         """Test triple exponential moving average with required parameters only"""
         mock_response = [
             {
@@ -208,21 +259,25 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "tema": 233.66383715917516
+                "tema": 233.66383715917516,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.triple_exponential_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.triple_exponential_moving_average(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/tema",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_triple_exponential_moving_average_with_dates(self, technical_indicators_category, mock_client):
+    async def test_triple_exponential_moving_average_with_dates(
+        self, technical_indicators_category, mock_client
+    ):
         """Test triple exponential moving average with date parameters"""
         mock_response = [{"date": "2025-02-04 00:00:00", "tema": 233.66383715917516}]
         mock_client._make_request.return_value = mock_response
@@ -237,11 +292,19 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/tema",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_relative_strength_index_basic(self, technical_indicators_category, mock_client):
+    async def test_relative_strength_index_basic(
+        self, technical_indicators_category, mock_client
+    ):
         """Test relative strength index with required parameters only"""
         mock_response = [
             {
@@ -251,21 +314,25 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "rsi": 47.64507340768903
+                "rsi": 47.64507340768903,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.relative_strength_index("AAPL", 10, "1day")
+        result = await technical_indicators_category.relative_strength_index(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/rsi",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_relative_strength_index_with_dates(self, technical_indicators_category, mock_client):
+    async def test_relative_strength_index_with_dates(
+        self, technical_indicators_category, mock_client
+    ):
         """Test relative strength index with date parameters"""
         mock_response = [{"date": "2025-02-04 00:00:00", "rsi": 47.64507340768903}]
         mock_client._make_request.return_value = mock_response
@@ -280,11 +347,19 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/rsi",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_standard_deviation_basic(self, technical_indicators_category, mock_client):
+    async def test_standard_deviation_basic(
+        self, technical_indicators_category, mock_client
+    ):
         """Test standard deviation with required parameters only"""
         mock_response = [
             {
@@ -294,23 +369,29 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "standardDeviation": 6.139182763202282
+                "standardDeviation": 6.139182763202282,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.standard_deviation("AAPL", 10, "1day")
+        result = await technical_indicators_category.standard_deviation(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/standarddeviation",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_standard_deviation_with_dates(self, technical_indicators_category, mock_client):
+    async def test_standard_deviation_with_dates(
+        self, technical_indicators_category, mock_client
+    ):
         """Test standard deviation with date parameters"""
-        mock_response = [{"date": "2025-02-04 00:00:00", "standardDeviation": 6.139182763202282}]
+        mock_response = [
+            {"date": "2025-02-04 00:00:00", "standardDeviation": 6.139182763202282}
+        ]
         mock_client._make_request.return_value = mock_response
 
         from_date = date(2025, 2, 1)
@@ -323,11 +404,19 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/standarddeviation",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_williams_percent_r_basic(self, technical_indicators_category, mock_client):
+    async def test_williams_percent_r_basic(
+        self, technical_indicators_category, mock_client
+    ):
         """Test Williams %R with required parameters only"""
         mock_response = [
             {
@@ -337,23 +426,29 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "williams": -52.51824817518242
+                "williams": -52.51824817518242,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.williams_percent_r("AAPL", 10, "1day")
+        result = await technical_indicators_category.williams_percent_r(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/williams",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_williams_percent_r_with_dates(self, technical_indicators_category, mock_client):
+    async def test_williams_percent_r_with_dates(
+        self, technical_indicators_category, mock_client
+    ):
         """Test Williams %R with date parameters"""
-        mock_response = [{"date": "2025-02-04 00:00:00", "williams": -52.51824817518242}]
+        mock_response = [
+            {"date": "2025-02-04 00:00:00", "williams": -52.51824817518242}
+        ]
         mock_client._make_request.return_value = mock_response
 
         from_date = date(2025, 2, 1)
@@ -366,11 +461,19 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/williams",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_average_directional_index_basic(self, technical_indicators_category, mock_client):
+    async def test_average_directional_index_basic(
+        self, technical_indicators_category, mock_client
+    ):
         """Test average directional index with required parameters only"""
         mock_response = [
             {
@@ -380,21 +483,25 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "adx": 26.414065772772613
+                "adx": 26.414065772772613,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.average_directional_index("AAPL", 10, "1day")
+        result = await technical_indicators_category.average_directional_index(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/adx",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_average_directional_index_with_dates(self, technical_indicators_category, mock_client):
+    async def test_average_directional_index_with_dates(
+        self, technical_indicators_category, mock_client
+    ):
         """Test average directional index with date parameters"""
         mock_response = [{"date": "2025-02-04 00:00:00", "adx": 26.414065772772613}]
         mock_client._make_request.return_value = mock_response
@@ -409,24 +516,36 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/adx",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_empty_response_handling(self, technical_indicators_category, mock_client):
+    async def test_empty_response_handling(
+        self, technical_indicators_category, mock_client
+    ):
         """Test handling of empty responses"""
         mock_client._make_request.return_value = []
 
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day"
+        )
 
         assert result == []
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_large_response_handling(self, technical_indicators_category, mock_client):
+    async def test_large_response_handling(
+        self, technical_indicators_category, mock_client
+    ):
         """Test handling of large responses"""
         # Create a large mock response with multiple data points
         large_response = [
@@ -437,24 +556,28 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65 + (i * 0.1),
                 "close": 232.8 + (i * 0.1),
                 "volume": 44489128 + (i * 1000),
-                "sma": 231.215 + (i * 0.01)
+                "sma": 231.215 + (i * 0.01),
             }
             for i in range(1, 101)  # 100 data points
         ]
         mock_client._make_request.return_value = large_response
 
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day"
+        )
 
         assert len(result) == 100
         assert result[0]["date"] == "2025-02-01 00:00:00"
         assert result[99]["date"] == "2025-02-100 00:00:00"
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_response_structure_validation(self, technical_indicators_category, mock_client):
+    async def test_response_structure_validation(
+        self, technical_indicators_category, mock_client
+    ):
         """Test that response structure is preserved"""
         mock_response = [
             {
@@ -465,18 +588,20 @@ class TestTechnicalIndicatorsCategory:
                 "close": 232.8,
                 "volume": 44489128,
                 "sma": 231.215,
-                "extraField": "should be preserved"
+                "extraField": "should be preserved",
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day"
+        )
 
         assert result == mock_response
         assert result[0]["extraField"] == "should be preserved"
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
@@ -486,87 +611,109 @@ class TestTechnicalIndicatorsCategory:
         mock_client._make_request.return_value = mock_response
 
         # Test with AAPL
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
         # Test with MSFT
-        result = await technical_indicators_category.simple_moving_average("MSFT", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "MSFT", 10, "1day"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "MSFT", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "MSFT", "periodLength": 10, "timeframe": "1day"},
         )
 
         # Test with GOOGL
-        result = await technical_indicators_category.simple_moving_average("GOOGL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "GOOGL", 10, "1day"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "GOOGL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "GOOGL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_different_period_lengths(self, technical_indicators_category, mock_client):
+    async def test_different_period_lengths(
+        self, technical_indicators_category, mock_client
+    ):
         """Test technical indicators functionality with different period lengths"""
         mock_response = [{"date": "2025-02-04 00:00:00", "sma": 231.215}]
         mock_client._make_request.return_value = mock_response
 
         # Test with period length 10
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
         # Test with period length 20
-        result = await technical_indicators_category.simple_moving_average("AAPL", 20, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 20, "1day"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 20, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 20, "timeframe": "1day"},
         )
 
         # Test with period length 50
-        result = await technical_indicators_category.simple_moving_average("AAPL", 50, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 50, "1day"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 50, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 50, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_different_timeframes(self, technical_indicators_category, mock_client):
+    async def test_different_timeframes(
+        self, technical_indicators_category, mock_client
+    ):
         """Test technical indicators functionality with different timeframes"""
         mock_response = [{"date": "2025-02-04 00:00:00", "sma": 231.215}]
         mock_client._make_request.return_value = mock_response
 
         # Test with 1day timeframe
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
         # Test with 1hour timeframe
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1hour")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1hour"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1hour"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1hour"},
         )
 
         # Test with 5min timeframe
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "5min")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "5min"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "5min"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "5min"},
         )
 
     @pytest.mark.asyncio
@@ -577,61 +724,100 @@ class TestTechnicalIndicatorsCategory:
 
         # Test with leap year date
         leap_date = date(2024, 2, 29)
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day", from_date=leap_date)
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day", from_date=leap_date
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2024-02-29"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2024-02-29",
+            },
         )
 
         # Test with year boundary
         year_boundary = date(2024, 12, 31)
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day", to_date=year_boundary)
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day", to_date=year_boundary
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "to": "2024-12-31"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "to": "2024-12-31",
+            },
         )
 
         # Test with beginning of year
         year_beginning = date(2024, 1, 1)
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day", from_date=year_beginning)
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day", from_date=year_beginning
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2024-01-01"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2024-01-01",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_parameter_combinations(self, technical_indicators_category, mock_client):
+    async def test_parameter_combinations(
+        self, technical_indicators_category, mock_client
+    ):
         """Test various parameter combinations"""
         mock_response = [{"date": "2025-02-04 00:00:00", "sma": 231.215}]
         mock_client._make_request.return_value = mock_response
 
         # Test with only required parameters
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day"
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
         # Test with from_date
         from_date = date(2025, 2, 1)
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day", from_date=from_date)
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day", from_date=from_date
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+            },
         )
 
         # Test with to_date
         to_date = date(2025, 2, 28)
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day", to_date=to_date)
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day", to_date=to_date
+        )
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "to": "2025-02-28",
+            },
         )
 
         # Test with both dates
@@ -641,11 +827,19 @@ class TestTechnicalIndicatorsCategory:
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day", "from": "2025-02-01", "to": "2025-02-28"}
+            {
+                "symbol": "AAPL",
+                "periodLength": 10,
+                "timeframe": "1day",
+                "from": "2025-02-01",
+                "to": "2025-02-28",
+            },
         )
 
     @pytest.mark.asyncio
-    async def test_all_indicators_consistency(self, technical_indicators_category, mock_client):
+    async def test_all_indicators_consistency(
+        self, technical_indicators_category, mock_client
+    ):
         """Test that all indicators follow the same parameter pattern"""
         mock_response = [{"date": "2025-02-04 00:00:00", "value": 231.215}]
         mock_client._make_request.return_value = mock_response
@@ -660,7 +854,7 @@ class TestTechnicalIndicatorsCategory:
             ("relative_strength_index", "technical-indicators/rsi"),
             ("standard_deviation", "technical-indicators/standarddeviation"),
             ("williams_percent_r", "technical-indicators/williams"),
-            ("average_directional_index", "technical-indicators/adx")
+            ("average_directional_index", "technical-indicators/adx"),
         ]
 
         for method_name, endpoint in indicators:
@@ -668,12 +862,13 @@ class TestTechnicalIndicatorsCategory:
             result = await method("AAPL", 10, "1day")
             assert result == mock_response
             mock_client._make_request.assert_called_with(
-                endpoint,
-                {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+                endpoint, {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
             )
 
     @pytest.mark.asyncio
-    async def test_sma_response_validation(self, technical_indicators_category, mock_client):
+    async def test_sma_response_validation(
+        self, technical_indicators_category, mock_client
+    ):
         """Test SMA response validation"""
         mock_response = [
             {
@@ -683,12 +878,14 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "sma": 231.215
+                "sma": 231.215,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.simple_moving_average("AAPL", 10, "1day")
+        result = await technical_indicators_category.simple_moving_average(
+            "AAPL", 10, "1day"
+        )
 
         assert len(result) == 1
         assert result[0]["date"] == "2025-02-04 00:00:00"
@@ -700,11 +897,13 @@ class TestTechnicalIndicatorsCategory:
         assert result[0]["sma"] == 231.215
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/sma",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio
-    async def test_rsi_response_validation(self, technical_indicators_category, mock_client):
+    async def test_rsi_response_validation(
+        self, technical_indicators_category, mock_client
+    ):
         """Test RSI response validation"""
         mock_response = [
             {
@@ -714,12 +913,14 @@ class TestTechnicalIndicatorsCategory:
                 "low": 226.65,
                 "close": 232.8,
                 "volume": 44489128,
-                "rsi": 47.64507340768903
+                "rsi": 47.64507340768903,
             }
         ]
         mock_client._make_request.return_value = mock_response
 
-        result = await technical_indicators_category.relative_strength_index("AAPL", 10, "1day")
+        result = await technical_indicators_category.relative_strength_index(
+            "AAPL", 10, "1day"
+        )
 
         assert len(result) == 1
         assert result[0]["date"] == "2025-02-04 00:00:00"
@@ -731,7 +932,7 @@ class TestTechnicalIndicatorsCategory:
         assert result[0]["rsi"] == 47.64507340768903
         mock_client._make_request.assert_called_once_with(
             "technical-indicators/rsi",
-            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"}
+            {"symbol": "AAPL", "periodLength": 10, "timeframe": "1day"},
         )
 
     @pytest.mark.asyncio

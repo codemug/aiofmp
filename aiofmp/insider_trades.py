@@ -5,8 +5,8 @@ This module provides insider trading functionality including latest trades, sear
 transaction types, statistics, and acquisition ownership tracking.
 """
 
-from typing import Any, Dict, List, Optional
 from datetime import date
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -24,11 +24,11 @@ class InsiderTradesCategory:
         self._client = client
 
     async def latest_insider_trades(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            trade_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        page: int | None = None,
+        limit: int | None = None,
+        trade_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get the latest insider trading activity
 
@@ -57,14 +57,14 @@ class InsiderTradesCategory:
         return await self._client._make_request("insider-trading/latest", params)
 
     async def search_insider_trades(
-            self,
-            symbol: Optional[str] = None,
-            page: Optional[int] = None,
-            limit: Optional[int] = None,
-            reporting_cik: Optional[str] = None,
-            company_cik: Optional[str] = None,
-            transaction_type: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str | None = None,
+        page: int | None = None,
+        limit: int | None = None,
+        reporting_cik: str | None = None,
+        company_cik: str | None = None,
+        transaction_type: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Search insider trading activity by various criteria
 
@@ -101,7 +101,7 @@ class InsiderTradesCategory:
 
         return await self._client._make_request("insider-trading/search", params)
 
-    async def search_by_reporting_name(self, name: str) -> List[Dict[str, Any]]:
+    async def search_by_reporting_name(self, name: str) -> list[dict[str, Any]]:
         """
         Search for insider trading activity by reporting name
 
@@ -118,9 +118,11 @@ class InsiderTradesCategory:
             >>> # Returns: [{"reportingCik": "0001548760", "reportingName": "Zuckerberg Mark"}]
         """
         params = {"name": name}
-        return await self._client._make_request("insider-trading/reporting-name", params)
+        return await self._client._make_request(
+            "insider-trading/reporting-name", params
+        )
 
-    async def all_transaction_types(self) -> List[Dict[str, Any]]:
+    async def all_transaction_types(self) -> list[dict[str, Any]]:
         """
         Get a comprehensive list of all insider transaction types
 
@@ -135,7 +137,7 @@ class InsiderTradesCategory:
         """
         return await self._client._make_request("insider-trading-transaction-type")
 
-    async def insider_trade_statistics(self, symbol: str) -> List[Dict[str, Any]]:
+    async def insider_trade_statistics(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get insider trading statistics for a specific company
 
@@ -155,10 +157,8 @@ class InsiderTradesCategory:
         return await self._client._make_request("insider-trading/statistics", params)
 
     async def acquisition_ownership(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Track changes in stock ownership during acquisitions
 
@@ -179,4 +179,6 @@ class InsiderTradesCategory:
         if limit is not None:
             params["limit"] = limit
 
-        return await self._client._make_request("acquisition-of-beneficial-ownership", params)
+        return await self._client._make_request(
+            "acquisition-of-beneficial-ownership", params
+        )

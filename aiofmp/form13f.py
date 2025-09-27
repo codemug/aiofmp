@@ -5,7 +5,7 @@ This module provides Form 13F and institutional ownership functionality includin
 latest filings, extracts, analytics, performance summaries, and industry breakdowns.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,10 +23,8 @@ class Form13FCategory:
         self._client = client
 
     async def latest_filings(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, page: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get the most recent SEC filings related to institutional ownership
 
@@ -49,14 +47,13 @@ class Form13FCategory:
         if limit is not None:
             params["limit"] = limit
 
-        return await self._client._make_request("institutional-ownership/latest", params)
+        return await self._client._make_request(
+            "institutional-ownership/latest", params
+        )
 
     async def filings_extract(
-            self,
-            cik: str,
-            year: str,
-            quarter: str
-    ) -> List[Dict[str, Any]]:
+        self, cik: str, year: str, quarter: str
+    ) -> list[dict[str, Any]]:
         """
         Extract detailed data from SEC filings for a specific institutional investor
 
@@ -75,12 +72,11 @@ class Form13FCategory:
             >>> # Returns: [{"date": "2023-09-30", "cik": "0001388838", "symbol": "CHRD", ...}]
         """
         params = {"cik": cik, "year": year, "quarter": quarter}
-        return await self._client._make_request("institutional-ownership/extract", params)
+        return await self._client._make_request(
+            "institutional-ownership/extract", params
+        )
 
-    async def filings_dates(
-            self,
-            cik: str
-    ) -> List[Dict[str, Any]]:
+    async def filings_dates(self, cik: str) -> list[dict[str, Any]]:
         """
         Get dates associated with Form 13F filings by institutional investors
 
@@ -100,13 +96,13 @@ class Form13FCategory:
         return await self._client._make_request("institutional-ownership/dates", params)
 
     async def filings_extract_analytics_by_holder(
-            self,
-            symbol: str,
-            year: str,
-            quarter: str,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        year: str,
+        quarter: str,
+        page: int | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get analytical breakdown of institutional filings by holder for a specific stock
 
@@ -132,13 +128,13 @@ class Form13FCategory:
         if limit is not None:
             params["limit"] = limit
 
-        return await self._client._make_request("institutional-ownership/extract-analytics/holder", params)
+        return await self._client._make_request(
+            "institutional-ownership/extract-analytics/holder", params
+        )
 
     async def holder_performance_summary(
-            self,
-            cik: str,
-            page: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, cik: str, page: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get performance summary for institutional investors based on their stock holdings
 
@@ -159,14 +155,13 @@ class Form13FCategory:
         if page is not None:
             params["page"] = page
 
-        return await self._client._make_request("institutional-ownership/holder-performance-summary", params)
+        return await self._client._make_request(
+            "institutional-ownership/holder-performance-summary", params
+        )
 
     async def holder_industry_breakdown(
-            self,
-            cik: str,
-            year: str,
-            quarter: str
-    ) -> List[Dict[str, Any]]:
+        self, cik: str, year: str, quarter: str
+    ) -> list[dict[str, Any]]:
         """
         Get industry breakdown of institutional holdings for a specific investor
 
@@ -185,14 +180,13 @@ class Form13FCategory:
             >>> # Returns: [{"date": "2023-09-30", "cik": "0001067983", "industryTitle": "ELECTRONIC COMPUTERS", ...}]
         """
         params = {"cik": cik, "year": year, "quarter": quarter}
-        return await self._client._make_request("institutional-ownership/holder-industry-breakdown", params)
+        return await self._client._make_request(
+            "institutional-ownership/holder-industry-breakdown", params
+        )
 
     async def symbol_positions_summary(
-            self,
-            symbol: str,
-            year: str,
-            quarter: str
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, year: str, quarter: str
+    ) -> list[dict[str, Any]]:
         """
         Get comprehensive snapshot of institutional holdings for a specific stock symbol
 
@@ -211,13 +205,13 @@ class Form13FCategory:
             >>> # Returns: [{"symbol": "AAPL", "cik": "0000320193", "investorsHolding": 4805, ...}]
         """
         params = {"symbol": symbol, "year": year, "quarter": quarter}
-        return await self._client._make_request("institutional-ownership/symbol-positions-summary", params)
+        return await self._client._make_request(
+            "institutional-ownership/symbol-positions-summary", params
+        )
 
     async def industry_performance_summary(
-            self,
-            year: str,
-            quarter: str
-    ) -> List[Dict[str, Any]]:
+        self, year: str, quarter: str
+    ) -> list[dict[str, Any]]:
         """
         Get overview of how various industries are performing financially
 
@@ -235,4 +229,6 @@ class Form13FCategory:
             >>> # Returns: [{"industryTitle": "ABRASIVE, ASBESTOS & MISC NONMETALLIC MINERAL PRODS", ...}]
         """
         params = {"year": year, "quarter": quarter}
-        return await self._client._make_request("institutional-ownership/industry-summary", params)
+        return await self._client._make_request(
+            "institutional-ownership/industry-summary", params
+        )

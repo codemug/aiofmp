@@ -5,13 +5,12 @@ This module provides the FMP client instance management for MCP tools.
 """
 
 import os
-from typing import Optional
 
 from . import FmpClient
 from .base import FMPAuthenticationError
 
 # Global FMP client instance
-_fmp_client: Optional[FmpClient] = None
+_fmp_client: FmpClient | None = None
 
 
 def reset_fmp_client():

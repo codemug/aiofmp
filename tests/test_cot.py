@@ -2,8 +2,9 @@
 Unit tests for FMP Commitment of Traders (COT) category
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from aiofmp.base import FMPBaseClient
 from aiofmp.cot import CommitmentOfTradersCategory
@@ -11,19 +12,19 @@ from aiofmp.cot import CommitmentOfTradersCategory
 
 class TestCommitmentOfTradersCategory:
     """Test cases for CommitmentOfTradersCategory"""
-    
+
     @pytest.fixture
     def mock_client(self):
         """Mock FMP base client"""
         client = MagicMock(spec=FMPBaseClient)
         client._make_request = AsyncMock()
         return client
-    
+
     @pytest.fixture
     def cot_category(self, mock_client):
         """COT category instance with mocked client"""
         return CommitmentOfTradersCategory(mock_client)
-    
+
     @pytest.mark.asyncio
     async def test_cot_report_basic(self, cot_category, mock_client):
         """Test COT report with required parameters only"""
@@ -156,58 +157,58 @@ class TestCommitmentOfTradersCategory:
                 "concNetLe4TdrShortOther": 26.7,
                 "concNetLe8TdrLongOther": 73.9,
                 "concNetLe8TdrShortOther": 44.2,
-                "contractUnits": "(CONTRACTS OF 37,500 POUNDS)"
+                "contractUnits": "(CONTRACTS OF 37,500 POUNDS)",
             }
         ]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_report("KC")
-        
+
         assert result == mock_response
-        mock_client._make_request.assert_called_once_with("commitment-of-traders-report", {"symbol": "KC"})
-    
+        mock_client._make_request.assert_called_once_with(
+            "commitment-of-traders-report", {"symbol": "KC"}
+        )
+
     @pytest.mark.asyncio
     async def test_cot_report_with_dates(self, cot_category, mock_client):
         """Test COT report with date parameters"""
         mock_response = [{"symbol": "KC", "name": "Coffee (KC)", "sector": "SOFTS"}]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_report("KC", "2024-01-01", "2024-03-01")
-        
+
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "commitment-of-traders-report",
-            {"symbol": "KC", "from": "2024-01-01", "to": "2024-03-01"}
+            {"symbol": "KC", "from": "2024-01-01", "to": "2024-03-01"},
         )
-    
+
     @pytest.mark.asyncio
     async def test_cot_report_with_from_date_only(self, cot_category, mock_client):
         """Test COT report with only from_date parameter"""
         mock_response = [{"symbol": "KC", "name": "Coffee (KC)"}]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_report("KC", from_date="2024-01-01")
-        
+
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
-            "commitment-of-traders-report",
-            {"symbol": "KC", "from": "2024-01-01"}
+            "commitment-of-traders-report", {"symbol": "KC", "from": "2024-01-01"}
         )
-    
+
     @pytest.mark.asyncio
     async def test_cot_report_with_to_date_only(self, cot_category, mock_client):
         """Test COT report with only to_date parameter"""
         mock_response = [{"symbol": "KC", "name": "Coffee (KC)"}]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_report("KC", to_date="2024-03-01")
-        
+
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
-            "commitment-of-traders-report",
-            {"symbol": "KC", "to": "2024-03-01"}
+            "commitment-of-traders-report", {"symbol": "KC", "to": "2024-03-01"}
         )
-    
+
     @pytest.mark.asyncio
     async def test_cot_analysis_basic(self, cot_category, mock_client):
         """Test COT analysis with required parameters only"""
@@ -228,83 +229,87 @@ class TestCommitmentOfTradersCategory:
                 "previousNetPosition": 46312,
                 "changeInNetPosition": 0.1,
                 "marketSentiment": "Increasing Bullish",
-                "reversalTrend": False
+                "reversalTrend": False,
             }
         ]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_analysis("B6")
-        
+
         assert result == mock_response
-        mock_client._make_request.assert_called_once_with("commitment-of-traders-analysis", {"symbol": "B6"})
-    
+        mock_client._make_request.assert_called_once_with(
+            "commitment-of-traders-analysis", {"symbol": "B6"}
+        )
+
     @pytest.mark.asyncio
     async def test_cot_analysis_with_dates(self, cot_category, mock_client):
         """Test COT analysis with date parameters"""
         mock_response = [{"symbol": "B6", "marketSituation": "Bullish"}]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_analysis("B6", "2024-01-01", "2024-03-01")
-        
+
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
             "commitment-of-traders-analysis",
-            {"symbol": "B6", "from": "2024-01-01", "to": "2024-03-01"}
+            {"symbol": "B6", "from": "2024-01-01", "to": "2024-03-01"},
         )
-    
+
     @pytest.mark.asyncio
     async def test_cot_analysis_with_from_date_only(self, cot_category, mock_client):
         """Test COT analysis with only from_date parameter"""
         mock_response = [{"symbol": "B6", "marketSituation": "Bullish"}]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_analysis("B6", from_date="2024-01-01")
-        
+
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
-            "commitment-of-traders-analysis",
-            {"symbol": "B6", "from": "2024-01-01"}
+            "commitment-of-traders-analysis", {"symbol": "B6", "from": "2024-01-01"}
         )
-    
+
     @pytest.mark.asyncio
     async def test_cot_analysis_with_to_date_only(self, cot_category, mock_client):
         """Test COT analysis with only to_date parameter"""
         mock_response = [{"symbol": "B6", "marketSituation": "Bullish"}]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_analysis("B6", to_date="2024-03-01")
-        
+
         assert result == mock_response
         mock_client._make_request.assert_called_once_with(
-            "commitment-of-traders-analysis",
-            {"symbol": "B6", "to": "2024-03-01"}
+            "commitment-of-traders-analysis", {"symbol": "B6", "to": "2024-03-01"}
         )
-    
+
     @pytest.mark.asyncio
     async def test_cot_list_basic(self, cot_category, mock_client):
         """Test COT list with no parameters"""
         mock_response = [
             {"symbol": "NG", "name": "Natural Gas (NG)"},
             {"symbol": "KC", "name": "Coffee (KC)"},
-            {"symbol": "B6", "name": "British Pound (B6)"}
+            {"symbol": "B6", "name": "British Pound (B6)"},
         ]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_list()
-        
+
         assert result == mock_response
-        mock_client._make_request.assert_called_once_with("commitment-of-traders-list", {})
-    
+        mock_client._make_request.assert_called_once_with(
+            "commitment-of-traders-list", {}
+        )
+
     @pytest.mark.asyncio
     async def test_empty_response_handling(self, cot_category, mock_client):
         """Test handling of empty responses"""
         mock_client._make_request.return_value = []
-        
+
         result = await cot_category.cot_report("KC")
-        
+
         assert result == []
-        mock_client._make_request.assert_called_once_with("commitment-of-traders-report", {"symbol": "KC"})
-    
+        mock_client._make_request.assert_called_once_with(
+            "commitment-of-traders-report", {"symbol": "KC"}
+        )
+
     @pytest.mark.asyncio
     async def test_large_response_handling(self, cot_category, mock_client):
         """Test handling of large responses"""
@@ -314,22 +319,22 @@ class TestCommitmentOfTradersCategory:
                 "symbol": f"SYMBOL_{i}",
                 "name": f"Commodity {i}",
                 "sector": f"SECTOR_{i % 5}",
-                "openInterestAll": 100000 + i * 1000
+                "openInterestAll": 100000 + i * 1000,
             }
             for i in range(1, 101)
         ]
         mock_client._make_request.return_value = large_response
-        
+
         result = await cot_category.cot_report("KC", "2024-01-01", "2024-03-01")
-        
+
         assert len(result) == 100
         assert result[0]["symbol"] == "SYMBOL_1"
         assert result[99]["symbol"] == "SYMBOL_100"
         mock_client._make_request.assert_called_once_with(
             "commitment-of-traders-report",
-            {"symbol": "KC", "from": "2024-01-01", "to": "2024-03-01"}
+            {"symbol": "KC", "from": "2024-01-01", "to": "2024-03-01"},
         )
-    
+
     @pytest.mark.asyncio
     async def test_response_structure_validation(self, cot_category, mock_client):
         """Test that response structure is preserved"""
@@ -338,63 +343,67 @@ class TestCommitmentOfTradersCategory:
                 "symbol": "KC",
                 "name": "Coffee (KC)",
                 "sector": "SOFTS",
-                "extraField": "should be preserved"
+                "extraField": "should be preserved",
             }
         ]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_report("KC")
-        
+
         assert result == mock_response
         assert result[0]["extraField"] == "should be preserved"
-        mock_client._make_request.assert_called_once_with("commitment-of-traders-report", {"symbol": "KC"})
-    
+        mock_client._make_request.assert_called_once_with(
+            "commitment-of-traders-report", {"symbol": "KC"}
+        )
+
     @pytest.mark.asyncio
     async def test_date_parameter_combinations(self, cot_category, mock_client):
         """Test various date parameter combinations"""
         mock_response = [{"symbol": "KC", "name": "Coffee (KC)"}]
         mock_client._make_request.return_value = mock_response
-        
+
         # Test with only from_date
         result = await cot_category.cot_report("KC", "2024-01-01")
         assert result == mock_response
         mock_client._make_request.assert_called_with(
-            "commitment-of-traders-report",
-            {"symbol": "KC", "from": "2024-01-01"}
+            "commitment-of-traders-report", {"symbol": "KC", "from": "2024-01-01"}
         )
-        
+
         # Test with only to_date
         result = await cot_category.cot_report("KC", to_date="2024-03-01")
         assert result == mock_response
         mock_client._make_request.assert_called_with(
-            "commitment-of-traders-report",
-            {"symbol": "KC", "to": "2024-03-01"}
+            "commitment-of-traders-report", {"symbol": "KC", "to": "2024-03-01"}
         )
-        
+
         # Test with both dates
         result = await cot_category.cot_report("KC", "2024-01-01", "2024-03-01")
         assert result == mock_response
         mock_client._make_request.assert_called_with(
             "commitment-of-traders-report",
-            {"symbol": "KC", "from": "2024-01-01", "to": "2024-03-01"}
+            {"symbol": "KC", "from": "2024-01-01", "to": "2024-03-01"},
         )
-    
+
     @pytest.mark.asyncio
     async def test_different_symbols(self, cot_category, mock_client):
         """Test COT functionality with different symbols"""
         mock_response = [{"symbol": "NG", "name": "Natural Gas (NG)"}]
         mock_client._make_request.return_value = mock_response
-        
+
         # Test with Natural Gas
         result = await cot_category.cot_report("NG")
         assert result == mock_response
-        mock_client._make_request.assert_called_with("commitment-of-traders-report", {"symbol": "NG"})
-        
+        mock_client._make_request.assert_called_with(
+            "commitment-of-traders-report", {"symbol": "NG"}
+        )
+
         # Test with British Pound
         result = await cot_category.cot_analysis("B6")
         assert result == mock_response
-        mock_client._make_request.assert_called_with("commitment-of-traders-analysis", {"symbol": "B6"})
-    
+        mock_client._make_request.assert_called_with(
+            "commitment-of-traders-analysis", {"symbol": "B6"}
+        )
+
     @pytest.mark.asyncio
     async def test_cot_list_response_validation(self, cot_category, mock_client):
         """Test COT list response validation"""
@@ -403,15 +412,17 @@ class TestCommitmentOfTradersCategory:
             {"symbol": "KC", "name": "Coffee (KC)"},
             {"symbol": "B6", "name": "British Pound (B6)"},
             {"symbol": "GC", "name": "Gold (GC)"},
-            {"symbol": "SI", "name": "Silver (SI)"}
+            {"symbol": "SI", "name": "Silver (SI)"},
         ]
         mock_client._make_request.return_value = mock_response
-        
+
         result = await cot_category.cot_list()
-        
+
         assert len(result) == 5
         assert result[0]["symbol"] == "NG"
         assert result[0]["name"] == "Natural Gas (NG)"
         assert result[4]["symbol"] == "SI"
         assert result[4]["name"] == "Silver (SI)"
-        mock_client._make_request.assert_called_once_with("commitment-of-traders-list", {})
+        mock_client._make_request.assert_called_once_with(
+            "commitment-of-traders-list", {}
+        )

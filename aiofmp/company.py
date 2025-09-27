@@ -6,7 +6,7 @@ market capitalization data, shares float information, mergers & acquisitions dat
 executives, and compensation information.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,7 +23,7 @@ class CompanyCategory:
         """
         self._client = client
 
-    async def profile(self, symbol: str) -> List[Dict[str, Any]]:
+    async def profile(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get detailed company profile data
 
@@ -42,7 +42,7 @@ class CompanyCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("profile", params)
 
-    async def notes(self, symbol: str) -> List[Dict[str, Any]]:
+    async def notes(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get company-issued notes information
 
@@ -62,10 +62,8 @@ class CompanyCategory:
         return await self._client._make_request("company-notes", params)
 
     async def employee_count(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get company employee count information
 
@@ -89,10 +87,8 @@ class CompanyCategory:
         return await self._client._make_request("employee-count", params)
 
     async def historical_employee_count(
-            self,
-            symbol: str,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get historical employee count data for a company
 
@@ -115,7 +111,7 @@ class CompanyCategory:
 
         return await self._client._make_request("historical-employee-count", params)
 
-    async def market_cap(self, symbol: str) -> List[Dict[str, Any]]:
+    async def market_cap(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get company market capitalization data
 
@@ -134,7 +130,7 @@ class CompanyCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("market-capitalization", params)
 
-    async def batch_market_cap(self, symbols: List[str]) -> List[Dict[str, Any]]:
+    async def batch_market_cap(self, symbols: list[str]) -> list[dict[str, Any]]:
         """
         Get market capitalization data for multiple companies
 
@@ -155,12 +151,12 @@ class CompanyCategory:
         return await self._client._make_request("market-capitalization-batch", params)
 
     async def historical_market_cap(
-            self,
-            symbol: str,
-            limit: Optional[int] = None,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        limit: int | None = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get historical market capitalization data for a company
 
@@ -187,9 +183,11 @@ class CompanyCategory:
         if to_date is not None:
             params["to"] = to_date
 
-        return await self._client._make_request("historical-market-capitalization", params)
+        return await self._client._make_request(
+            "historical-market-capitalization", params
+        )
 
-    async def shares_float(self, symbol: str) -> List[Dict[str, Any]]:
+    async def shares_float(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get company share float and liquidity information
 
@@ -209,10 +207,8 @@ class CompanyCategory:
         return await self._client._make_request("shares-float", params)
 
     async def all_shares_float(
-            self,
-            limit: Optional[int] = None,
-            page: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, limit: int | None = None, page: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get shares float data for all available companies
 
@@ -238,10 +234,8 @@ class CompanyCategory:
         return await self._client._make_request("shares-float-all", params)
 
     async def latest_mergers_acquisitions(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, page: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get latest mergers and acquisitions data
 
@@ -266,7 +260,7 @@ class CompanyCategory:
 
         return await self._client._make_request("mergers-acquisitions-latest", params)
 
-    async def search_mergers_acquisitions(self, name: str) -> List[Dict[str, Any]]:
+    async def search_mergers_acquisitions(self, name: str) -> list[dict[str, Any]]:
         """
         Search for specific mergers and acquisitions data
 
@@ -286,10 +280,8 @@ class CompanyCategory:
         return await self._client._make_request("mergers-acquisitions-search", params)
 
     async def executives(
-            self,
-            symbol: str,
-            active: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, active: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get company executives information
 
@@ -312,7 +304,7 @@ class CompanyCategory:
 
         return await self._client._make_request("key-executives", params)
 
-    async def executive_compensation(self, symbol: str) -> List[Dict[str, Any]]:
+    async def executive_compensation(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get executive compensation data
 
@@ -329,12 +321,13 @@ class CompanyCategory:
             >>> # Returns: [{"cik": "0000320193", "symbol": "AAPL", "nameAndPosition": "Kate Adams Senior Vice President...", ...}]
         """
         params = {"symbol": symbol}
-        return await self._client._make_request("governance-executive-compensation", params)
+        return await self._client._make_request(
+            "governance-executive-compensation", params
+        )
 
     async def executive_compensation_benchmark(
-            self,
-            year: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, year: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get executive compensation benchmark data by industry
 
@@ -354,4 +347,6 @@ class CompanyCategory:
         if year is not None:
             params["year"] = year
 
-        return await self._client._make_request("executive-compensation-benchmark", params)
+        return await self._client._make_request(
+            "executive-compensation-benchmark", params
+        )

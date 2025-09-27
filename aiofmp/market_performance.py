@@ -5,8 +5,8 @@ This module provides market performance functionality including sector and indus
 P/E ratios, historical data, and market movers (gainers, losers, most active).
 """
 
-from typing import Any, Dict, List, Optional
 from datetime import date
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -24,11 +24,11 @@ class MarketPerformanceCategory:
         self._client = client
 
     async def sector_performance_snapshot(
-            self,
-            snapshot_date: date,
-            exchange: Optional[str] = None,
-            sector: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        snapshot_date: date,
+        exchange: str | None = None,
+        sector: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get a snapshot of sector performance
 
@@ -55,11 +55,11 @@ class MarketPerformanceCategory:
         return await self._client._make_request("sector-performance-snapshot", params)
 
     async def industry_performance_snapshot(
-            self,
-            snapshot_date: date,
-            exchange: Optional[str] = None,
-            industry: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        snapshot_date: date,
+        exchange: str | None = None,
+        industry: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get a snapshot of industry performance
 
@@ -86,12 +86,12 @@ class MarketPerformanceCategory:
         return await self._client._make_request("industry-performance-snapshot", params)
 
     async def historical_sector_performance(
-            self,
-            sector: str,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None,
-            exchange: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        sector: str,
+        from_date: date | None = None,
+        to_date: date | None = None,
+        exchange: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get historical sector performance data
 
@@ -121,12 +121,12 @@ class MarketPerformanceCategory:
         return await self._client._make_request("historical-sector-performance", params)
 
     async def historical_industry_performance(
-            self,
-            industry: str,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None,
-            exchange: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        industry: str,
+        from_date: date | None = None,
+        to_date: date | None = None,
+        exchange: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get historical industry performance data
 
@@ -153,14 +153,16 @@ class MarketPerformanceCategory:
         if exchange is not None:
             params["exchange"] = exchange
 
-        return await self._client._make_request("historical-industry-performance", params)
+        return await self._client._make_request(
+            "historical-industry-performance", params
+        )
 
     async def sector_pe_snapshot(
-            self,
-            snapshot_date: date,
-            exchange: Optional[str] = None,
-            sector: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        snapshot_date: date,
+        exchange: str | None = None,
+        sector: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get price-to-earnings (P/E) ratios for various sectors
 
@@ -187,11 +189,11 @@ class MarketPerformanceCategory:
         return await self._client._make_request("sector-pe-snapshot", params)
 
     async def industry_pe_snapshot(
-            self,
-            snapshot_date: date,
-            exchange: Optional[str] = None,
-            industry: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        snapshot_date: date,
+        exchange: str | None = None,
+        industry: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get price-to-earnings (P/E) ratios for different industries
 
@@ -218,12 +220,12 @@ class MarketPerformanceCategory:
         return await self._client._make_request("industry-pe-snapshot", params)
 
     async def historical_sector_pe(
-            self,
-            sector: str,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None,
-            exchange: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        sector: str,
+        from_date: date | None = None,
+        to_date: date | None = None,
+        exchange: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get historical price-to-earnings (P/E) ratios for various sectors
 
@@ -253,12 +255,12 @@ class MarketPerformanceCategory:
         return await self._client._make_request("historical-sector-pe", params)
 
     async def historical_industry_pe(
-            self,
-            industry: str,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None,
-            exchange: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        industry: str,
+        from_date: date | None = None,
+        to_date: date | None = None,
+        exchange: str | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get historical price-to-earnings (P/E) ratios by industry
 
@@ -287,7 +289,7 @@ class MarketPerformanceCategory:
 
         return await self._client._make_request("historical-industry-pe", params)
 
-    async def biggest_gainers(self) -> List[Dict[str, Any]]:
+    async def biggest_gainers(self) -> list[dict[str, Any]]:
         """
         Get the stocks with the largest price increases
 
@@ -302,7 +304,7 @@ class MarketPerformanceCategory:
         """
         return await self._client._make_request("biggest-gainers")
 
-    async def biggest_losers(self) -> List[Dict[str, Any]]:
+    async def biggest_losers(self) -> list[dict[str, Any]]:
         """
         Get the stocks with the largest price drops
 
@@ -317,7 +319,7 @@ class MarketPerformanceCategory:
         """
         return await self._client._make_request("biggest-losers")
 
-    async def most_active_stocks(self) -> List[Dict[str, Any]]:
+    async def most_active_stocks(self) -> list[dict[str, Any]]:
         """
         Get the most actively traded stocks
 

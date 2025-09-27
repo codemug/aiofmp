@@ -5,8 +5,8 @@ This module provides technical analysis functionality including various moving a
 RSI, standard deviation, Williams %R, ADX, and other technical indicators for market analysis.
 """
 
-from typing import Any, Dict, List, Optional, Literal
 from datetime import date
+from typing import Any, Literal
 
 from .base import FMPBaseClient
 
@@ -27,13 +27,13 @@ class TechnicalIndicatorsCategory:
         self._client = client
 
     async def simple_moving_average(
-            self,
-            symbol: str,
-            period_length: int,
-            timeframe: Timeframe,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period_length: int,
+        timeframe: Timeframe,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get Simple Moving Average (SMA) technical indicator
 
@@ -56,7 +56,7 @@ class TechnicalIndicatorsCategory:
         params = {
             "symbol": symbol,
             "periodLength": period_length,
-            "timeframe": timeframe
+            "timeframe": timeframe,
         }
         if from_date is not None:
             params["from"] = from_date.strftime("%Y-%m-%d")
@@ -66,13 +66,13 @@ class TechnicalIndicatorsCategory:
         return await self._client._make_request("technical-indicators/sma", params)
 
     async def exponential_moving_average(
-            self,
-            symbol: str,
-            period_length: int,
-            timeframe: Timeframe,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period_length: int,
+        timeframe: Timeframe,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get Exponential Moving Average (EMA) technical indicator
 
@@ -95,7 +95,7 @@ class TechnicalIndicatorsCategory:
         params = {
             "symbol": symbol,
             "periodLength": period_length,
-            "timeframe": timeframe
+            "timeframe": timeframe,
         }
         if from_date is not None:
             params["from"] = from_date.strftime("%Y-%m-%d")
@@ -105,13 +105,13 @@ class TechnicalIndicatorsCategory:
         return await self._client._make_request("technical-indicators/ema", params)
 
     async def weighted_moving_average(
-            self,
-            symbol: str,
-            period_length: int,
-            timeframe: Timeframe,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period_length: int,
+        timeframe: Timeframe,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get Weighted Moving Average (WMA) technical indicator
 
@@ -134,7 +134,7 @@ class TechnicalIndicatorsCategory:
         params = {
             "symbol": symbol,
             "periodLength": period_length,
-            "timeframe": timeframe
+            "timeframe": timeframe,
         }
         if from_date is not None:
             params["from"] = from_date.strftime("%Y-%m-%d")
@@ -144,13 +144,13 @@ class TechnicalIndicatorsCategory:
         return await self._client._make_request("technical-indicators/wma", params)
 
     async def double_exponential_moving_average(
-            self,
-            symbol: str,
-            period_length: int,
-            timeframe: Timeframe,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period_length: int,
+        timeframe: Timeframe,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get Double Exponential Moving Average (DEMA) technical indicator
 
@@ -173,7 +173,7 @@ class TechnicalIndicatorsCategory:
         params = {
             "symbol": symbol,
             "periodLength": period_length,
-            "timeframe": timeframe
+            "timeframe": timeframe,
         }
         if from_date is not None:
             params["from"] = from_date.strftime("%Y-%m-%d")
@@ -183,13 +183,13 @@ class TechnicalIndicatorsCategory:
         return await self._client._make_request("technical-indicators/dema", params)
 
     async def triple_exponential_moving_average(
-            self,
-            symbol: str,
-            period_length: int,
-            timeframe: Timeframe,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period_length: int,
+        timeframe: Timeframe,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get Triple Exponential Moving Average (TEMA) technical indicator
 
@@ -212,7 +212,7 @@ class TechnicalIndicatorsCategory:
         params = {
             "symbol": symbol,
             "periodLength": period_length,
-            "timeframe": timeframe
+            "timeframe": timeframe,
         }
         if from_date is not None:
             params["from"] = from_date.strftime("%Y-%m-%d")
@@ -222,13 +222,13 @@ class TechnicalIndicatorsCategory:
         return await self._client._make_request("technical-indicators/tema", params)
 
     async def relative_strength_index(
-            self,
-            symbol: str,
-            period_length: int,
-            timeframe: Timeframe,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period_length: int,
+        timeframe: Timeframe,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get Relative Strength Index (RSI) technical indicator
 
@@ -251,7 +251,7 @@ class TechnicalIndicatorsCategory:
         params = {
             "symbol": symbol,
             "periodLength": period_length,
-            "timeframe": timeframe
+            "timeframe": timeframe,
         }
         if from_date is not None:
             params["from"] = from_date.strftime("%Y-%m-%d")
@@ -261,13 +261,13 @@ class TechnicalIndicatorsCategory:
         return await self._client._make_request("technical-indicators/rsi", params)
 
     async def standard_deviation(
-            self,
-            symbol: str,
-            period_length: int,
-            timeframe: Timeframe,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period_length: int,
+        timeframe: Timeframe,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get Standard Deviation technical indicator
 
@@ -290,23 +290,25 @@ class TechnicalIndicatorsCategory:
         params = {
             "symbol": symbol,
             "periodLength": period_length,
-            "timeframe": timeframe
+            "timeframe": timeframe,
         }
         if from_date is not None:
             params["from"] = from_date.strftime("%Y-%m-%d")
         if to_date is not None:
             params["to"] = to_date.strftime("%Y-%m-%d")
 
-        return await self._client._make_request("technical-indicators/standarddeviation", params)
+        return await self._client._make_request(
+            "technical-indicators/standarddeviation", params
+        )
 
     async def williams_percent_r(
-            self,
-            symbol: str,
-            period_length: int,
-            timeframe: Timeframe,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period_length: int,
+        timeframe: Timeframe,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get Williams %R technical indicator
 
@@ -329,7 +331,7 @@ class TechnicalIndicatorsCategory:
         params = {
             "symbol": symbol,
             "periodLength": period_length,
-            "timeframe": timeframe
+            "timeframe": timeframe,
         }
         if from_date is not None:
             params["from"] = from_date.strftime("%Y-%m-%d")
@@ -339,13 +341,13 @@ class TechnicalIndicatorsCategory:
         return await self._client._make_request("technical-indicators/williams", params)
 
     async def average_directional_index(
-            self,
-            symbol: str,
-            period_length: int,
-            timeframe: Timeframe,
-            from_date: Optional[date] = None,
-            to_date: Optional[date] = None
-    ) -> List[Dict[str, Any]]:
+        self,
+        symbol: str,
+        period_length: int,
+        timeframe: Timeframe,
+        from_date: date | None = None,
+        to_date: date | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Get Average Directional Index (ADX) technical indicator
 
@@ -368,7 +370,7 @@ class TechnicalIndicatorsCategory:
         params = {
             "symbol": symbol,
             "periodLength": period_length,
-            "timeframe": timeframe
+            "timeframe": timeframe,
         }
         if from_date is not None:
             params["from"] = from_date.strftime("%Y-%m-%d")

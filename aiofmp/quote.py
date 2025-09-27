@@ -5,7 +5,7 @@ This module provides quote functionality including real-time stock quotes, after
 aftermarket quotes, and stock price changes across various time periods.
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -22,7 +22,7 @@ class QuoteCategory:
         """
         self._client = client
 
-    async def stock_quote(self, symbol: str) -> Dict[str, Any]:
+    async def stock_quote(self, symbol: str) -> dict[str, Any]:
         """
         Get real-time stock quote for a specific symbol
 
@@ -40,7 +40,7 @@ class QuoteCategory:
         """
         return await self._client._make_request("quote", {"symbol": symbol})
 
-    async def aftermarket_trade(self, symbol: str) -> List[Dict[str, Any]]:
+    async def aftermarket_trade(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get aftermarket trade data for a specific symbol
 
@@ -58,7 +58,7 @@ class QuoteCategory:
         """
         return await self._client._make_request("aftermarket-trade", {"symbol": symbol})
 
-    async def aftermarket_quote(self, symbol: str) -> Dict[str, Any]:
+    async def aftermarket_quote(self, symbol: str) -> dict[str, Any]:
         """
         Get aftermarket quote data for a specific symbol
 
@@ -76,7 +76,7 @@ class QuoteCategory:
         """
         return await self._client._make_request("aftermarket-quote", {"symbol": symbol})
 
-    async def stock_price_change(self, symbol: str) -> Dict[str, Any]:
+    async def stock_price_change(self, symbol: str) -> dict[str, Any]:
         """
         Get stock price change data across various time periods
 
@@ -92,4 +92,6 @@ class QuoteCategory:
             >>> data = await client.quote.stock_price_change("AAPL")
             >>> # Returns: {"symbol": "AAPL", "1D": 2.1008, "5D": -2.45946, "1M": -4.33925, ...}
         """
-        return await self._client._make_request("stock-price-change", {"symbol": symbol})
+        return await self._client._make_request(
+            "stock-price-change", {"symbol": symbol}
+        )

@@ -5,7 +5,7 @@ This module provides Senate and House financial disclosure functionality includi
 latest disclosures, trading activity, name-based searches, and government transparency data.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -23,10 +23,8 @@ class SenateCategory:
         self._client = client
 
     async def latest_senate_disclosures(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, page: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get the latest financial disclosures from U.S. Senate members
 
@@ -52,10 +50,8 @@ class SenateCategory:
         return await self._client._make_request("senate-latest", params)
 
     async def latest_house_disclosures(
-            self,
-            page: Optional[int] = None,
-            limit: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+        self, page: int | None = None, limit: int | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get the latest financial disclosures from U.S. House members
 
@@ -80,7 +76,7 @@ class SenateCategory:
 
         return await self._client._make_request("house-latest", params)
 
-    async def senate_trading_activity(self, symbol: str) -> List[Dict[str, Any]]:
+    async def senate_trading_activity(self, symbol: str) -> list[dict[str, Any]]:
         """
         Monitor the trading activity of US Senators for a specific symbol
 
@@ -98,7 +94,7 @@ class SenateCategory:
         """
         return await self._client._make_request("senate-trades", {"symbol": symbol})
 
-    async def senate_trades_by_name(self, name: str) -> List[Dict[str, Any]]:
+    async def senate_trades_by_name(self, name: str) -> list[dict[str, Any]]:
         """
         Search Senate trading activity by Senator name
 
@@ -116,7 +112,7 @@ class SenateCategory:
         """
         return await self._client._make_request("senate-trades-by-name", {"name": name})
 
-    async def house_trading_activity(self, symbol: str) -> List[Dict[str, Any]]:
+    async def house_trading_activity(self, symbol: str) -> list[dict[str, Any]]:
         """
         Track the financial trades made by U.S. House members for a specific symbol
 
@@ -134,7 +130,7 @@ class SenateCategory:
         """
         return await self._client._make_request("house-trades", {"symbol": symbol})
 
-    async def house_trades_by_name(self, name: str) -> List[Dict[str, Any]]:
+    async def house_trades_by_name(self, name: str) -> list[dict[str, Any]]:
         """
         Search House trading activity by Representative name
 

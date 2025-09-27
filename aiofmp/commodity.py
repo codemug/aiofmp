@@ -5,7 +5,7 @@ This module provides commodity functionality including commodities list, real-ti
 historical price data, and intraday charts for various commodity futures.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .base import FMPBaseClient
 
@@ -22,7 +22,7 @@ class CommodityCategory:
         """
         self._client = client
 
-    async def commodities_list(self) -> List[Dict[str, Any]]:
+    async def commodities_list(self) -> list[dict[str, Any]]:
         """
         Get extensive list of tracked commodities across various sectors
 
@@ -37,7 +37,7 @@ class CommodityCategory:
         """
         return await self._client._make_request("commodities-list", {})
 
-    async def quote(self, symbol: str) -> List[Dict[str, Any]]:
+    async def quote(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get real-time price quotes for commodities
 
@@ -56,7 +56,7 @@ class CommodityCategory:
         params = {"symbol": symbol}
         return await self._client._make_request("quote", params)
 
-    async def quote_short(self, symbol: str) -> List[Dict[str, Any]]:
+    async def quote_short(self, symbol: str) -> list[dict[str, Any]]:
         """
         Get fast and accurate quotes for commodities
 
@@ -76,11 +76,8 @@ class CommodityCategory:
         return await self._client._make_request("quote-short", params)
 
     async def historical_price_light(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get historical end-of-day prices for commodities (light version)
 
@@ -107,11 +104,8 @@ class CommodityCategory:
         return await self._client._make_request("historical-price-eod/light", params)
 
     async def historical_price_full(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get full historical end-of-day price data for commodities
 
@@ -138,11 +132,8 @@ class CommodityCategory:
         return await self._client._make_request("historical-price-eod/full", params)
 
     async def intraday_1min(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get 1-minute interval intraday data for commodities
 
@@ -169,11 +160,8 @@ class CommodityCategory:
         return await self._client._make_request("historical-chart/1min", params)
 
     async def intraday_5min(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get 5-minute interval intraday data for commodities
 
@@ -200,11 +188,8 @@ class CommodityCategory:
         return await self._client._make_request("historical-chart/5min", params)
 
     async def intraday_1hour(
-            self,
-            symbol: str,
-            from_date: Optional[str] = None,
-            to_date: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        self, symbol: str, from_date: str | None = None, to_date: str | None = None
+    ) -> list[dict[str, Any]]:
         """
         Get 1-hour interval intraday data for commodities
 
