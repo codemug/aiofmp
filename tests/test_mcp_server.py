@@ -51,16 +51,16 @@ class TestMCPServer:
         with patch.dict(
             os.environ, {"FMP_API_KEY": "test_key", "MCP_TRANSPORT": "stdio"}
         ):
-            with patch("aiofmp.mcp_server.mcp.run") as mock_run:
-                # Mock the run method to return a coroutine
+            with patch("aiofmp.mcp_server.mcp.run_async") as mock_run_async:
+                # Mock the run_async method to return a coroutine
                 async def mock_run_coro(*args, **kwargs):
                     pass
 
-                mock_run.return_value = mock_run_coro()
+                mock_run_async.return_value = mock_run_coro()
 
                 await run_server()
 
-                mock_run.assert_called_once_with(transport="stdio")
+                mock_run_async.assert_called_once_with(transport="stdio")
 
     @pytest.mark.asyncio
     async def test_run_server_http(self):
@@ -74,16 +74,16 @@ class TestMCPServer:
                 "MCP_PORT": "3000",
             },
         ):
-            with patch("aiofmp.mcp_server.mcp.run") as mock_run:
-                # Mock the run method to return a coroutine
+            with patch("aiofmp.mcp_server.mcp.run_async") as mock_run_async:
+                # Mock the run_async method to return a coroutine
                 async def mock_run_coro(*args, **kwargs):
                     pass
 
-                mock_run.return_value = mock_run_coro()
+                mock_run_async.return_value = mock_run_coro()
 
                 await run_server()
 
-                mock_run.assert_called_once_with(
+                mock_run_async.assert_called_once_with(
                     transport="http", host="localhost", port=3000
                 )
 
@@ -104,12 +104,12 @@ class TestMCPServer:
     async def test_run_server_keyboard_interrupt(self):
         """Test handling keyboard interrupt."""
         with patch.dict(os.environ, {"FMP_API_KEY": "test_key"}):
-            with patch("aiofmp.mcp_server.mcp.run") as mock_run:
-                # Mock the run method to raise KeyboardInterrupt
+            with patch("aiofmp.mcp_server.mcp.run_async") as mock_run_async:
+                # Mock the run_async method to raise KeyboardInterrupt
                 async def mock_run_coro(*args, **kwargs):
                     raise KeyboardInterrupt()
 
-                mock_run.return_value = mock_run_coro()
+                mock_run_async.return_value = mock_run_coro()
 
                 await run_server()
 
@@ -120,8 +120,8 @@ class TestMCPServer:
     async def test_run_server_general_exception(self):
         """Test handling general exceptions."""
         with patch.dict(os.environ, {"FMP_API_KEY": "test_key"}):
-            with patch("aiofmp.mcp_server.mcp.run") as mock_run:
-                mock_run.side_effect = Exception("Server error")
+            with patch("aiofmp.mcp_server.mcp.run_async") as mock_run_async:
+                mock_run_async.side_effect = Exception("Server error")
 
                 with patch("sys.exit") as mock_exit:
                     await run_server()
@@ -129,12 +129,15 @@ class TestMCPServer:
 
     def test_main_function(self):
         """Test main function entry point."""
-        with patch("aiofmp.mcp_server.run_server") as mock_run_server:
-            mock_run_server.return_value = None
-
+        with patch("aiofmp.mcp_server.asyncio.run") as mock_asyncio_run:
             main()
 
-            mock_run_server.assert_called_once()
+            # Verify that asyncio.run was called once
+            mock_asyncio_run.assert_called_once()
+            # The argument should be the result of calling run_server()
+            args, _ = mock_asyncio_run.call_args
+            # We can't easily test the exact coroutine object, so just verify it was called
+            assert len(args) == 1
 
 
 # Error handler tests removed - FastMCP doesn't support global error handlers
