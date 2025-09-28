@@ -78,7 +78,7 @@ jobs:
           echo "New version would be: $NEW_VERSION"
           
           echo "Running semantic release..."
-          uv run semantic-release publish --verbosity=DEBUG
+          uv run semantic-release --verbose publish
           
       - name: Upload to PyPI
         if: success()
