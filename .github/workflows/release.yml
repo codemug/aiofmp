@@ -43,7 +43,7 @@ jobs:
         run: |
           uv run pytest tests/test_mcp_server.py tests/test_mcp_tools.py -v --tb=short
 
-  release:
+  publish:
     name: Release
     runs-on: ubuntu-latest
     needs: quick-test
@@ -65,54 +65,18 @@ jobs:
         with:
           version: "latest"
 
-      - name: Install dependencies (with dev)
+      - name: Install dependencies (with extras)
         run: |
-          uv sync --dev
+          uv sync --all-extras
 
-      - name: Release diagnostics
-        run: |
-          echo "Existing tags:" && git tag --list | sort -V || true
-          echo "Last 15 commits (on main):" && git --no-pager log --oneline -15 || true
-          echo "Conventional-looking commits since last tag:" && {
-            last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo '')
-            if [ -n "$last_tag" ]; then
-              git log --oneline ${last_tag}..HEAD | grep -E '^(feat|fix|perf|refactor|docs|test|chore)(\(|:)' || echo "(none)"
-            else
-              echo "(no tag yet)"
-            fi
-          }
-
-      - name: Run python-semantic-release (publish)
+      - name: Semantic Release
         env:
-          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
           PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # python-semantic-release expects PYPI token in environment variable named PYPI_API_TOKEN or configured in pyproject
-          set -e
-          echo "Diagnostic: token env variables present?";
-          for v in PYPI_API_TOKEN PYPI_TOKEN GITHUB_TOKEN; do
-            if [ -n "${!v}" ]; then echo "$v length: ${#GITHUB_TOKEN}" | sed 's/./*/g' >/dev/null; fi
-          done
-          if [ -z "${PYPI_API_TOKEN}" ]; then echo "PYPI_API_TOKEN is empty" >&2; fi
-          if ! uv run semantic-release --version >/dev/null 2>&1; then
-            echo "semantic-release entrypoint not found; attempting module invocation" >&2
-          fi
-          # Prefer module form to avoid missing console script edge cases
-          uv run python -m semantic_release publish
-          # After a successful publish, if pyproject still uses commit version_source, switch to tag for subsequent releases.
-          if grep -q 'version_source = "commit"' pyproject.toml; then
-            echo "Switching version_source back to 'tag' for subsequent runs";
-            sed -i.bak 's/version_source = "commit"/version_source = "tag"/' pyproject.toml
-            rm -f pyproject.toml.bak
-            git config user.name "github-actions"
-            git config user.email "github-actions@github.com"
-            git add pyproject.toml
-            git commit -m "chore: switch semantic-release version_source to tag post-bootstrap [skip ci]" || echo "No changes to commit"
-            git push origin HEAD:main || echo "Push skipped"
-          fi
+          uv run python -m semantic_release version
 
-  tag-release:
+  release:
     name: Ensure GitHub Release for Tag
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
