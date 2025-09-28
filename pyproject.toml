@@ -120,7 +120,8 @@ dev = [
 
 [tool.semantic_release]
 branch = "main"
-version_source = "tag"
+# Bootstrap with commit-based detection since no prior tags exist.
+version_source = "commit"
 tag_format = "v{version}"
 changelog_file = "CHANGELOG.md"
 upload_to_pypi = true
@@ -128,3 +129,5 @@ upload_to_release = true
 commit_parser = "conventional"
 build_command = "uv build"
 repository = "https://github.com/codemug/aiofmp"
+# Explicit token mapping to silence 'Token value is missing!' warning
+pypi_token = "${PYPI_API_TOKEN}"

@@ -96,6 +96,17 @@ jobs:
           fi
           # Prefer module form to avoid missing console script edge cases
           uv run python -m semantic_release publish
+          # After a successful publish, if pyproject still uses commit version_source, switch to tag for subsequent releases.
+          if grep -q 'version_source = "commit"' pyproject.toml; then
+            echo "Switching version_source back to 'tag' for subsequent runs";
+            sed -i.bak 's/version_source = "commit"/version_source = "tag"/' pyproject.toml
+            rm -f pyproject.toml.bak
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add pyproject.toml
+            git commit -m "chore: switch semantic-release version_source to tag post-bootstrap [skip ci]" || echo "No changes to commit"
+            git push origin HEAD:main || echo "Push skipped"
+          fi
 
   tag-release:
     name: Ensure GitHub Release for Tag
