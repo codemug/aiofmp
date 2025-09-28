@@ -1,6 +1,6 @@
 [project]
 name = "aiofmp"
-version = "0.1.0"
+version = "1.0.2"
 description = "Asynchronous Financial Modeling Prep API Client with MCP Server"
 readme = "README.md"
 license = {text = "Apache 2.0"}
@@ -120,17 +120,30 @@ dev = [
 
 [tool.semantic_release]
 branch = "main"
-version_source = "tag"  # use tag-based now that we will bootstrap an initial tag
+version_source = "tag"
 tag_format = "v{version}"
 commit_parser = "conventional"
 build_command = "uv build"
 repository = "https://github.com/codemug/aiofmp"
 upload_to_pypi = true
 upload_to_release = true
-major_on_zero = true
+major_on_zero = false
 allow_zero_version = false
 assets = []
 logging_use_named_masks = false
+
+[tool.semantic_release.remote]
+type = "github"
+token = { env = "GH_TOKEN" }
+
+[tool.semantic_release.publish]
+dist_glob_patterns = ["dist/*"]
+upload_to_vcs_release = true
+
+[tool.semantic_release.publish.pypi]
+upload = true
+token = { env = "REPOSITORY_PASSWORD" }
+username = { env = "REPOSITORY_USERNAME" }
 
 [tool.semantic_release.branches.main]
 match = "(main|master)"
@@ -145,10 +158,6 @@ allowed_tags = ["feat", "fix", "perf", "build", "chore", "ci", "docs", "style", 
 default_bump_level = 0
 parse_squash_commits = true
 ignore_merge_commits = true
-
-[tool.semantic_release.publish]
-dist_glob_patterns = ["dist/*"]
-upload_to_vcs_release = true
 
 [tool.semantic_release.changelog]
 exclude_commit_patterns = []
