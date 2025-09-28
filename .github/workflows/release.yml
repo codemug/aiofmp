@@ -69,16 +69,33 @@ jobs:
         run: |
           uv sync --all-extras
 
-      - name: Semantic Release
+      - name: Run Semantic Release
         env:
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-          TWINE_USERNAME: __token__
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPOSITORY_USERNAME: __token__
-          REPOSITORY_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
-          uv run semantic-release version
-          uv run semantic-release publish
+          echo "Checking for new version..."
+          NEW_VERSION=$(uv run semantic-release version --print)
+          echo "New version would be: $NEW_VERSION"
+          
+          echo "Running semantic release..."
+          uv run semantic-release publish --verbosity=DEBUG
+          
+      - name: Upload to PyPI
+        if: success()
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          echo "Checking for distribution files..."
+          if [ -d "dist" ] && [ -n "$(ls -A dist 2>/dev/null)" ]; then
+            echo "Found distribution files:"
+            ls -la dist/
+            echo "Uploading to PyPI..."
+            uv run twine upload dist/* --verbose
+          else
+            echo "No distribution files found to upload"
+            exit 1
+          fi
 
   release:
     name: Ensure GitHub Release for Tag
