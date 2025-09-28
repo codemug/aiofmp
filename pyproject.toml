@@ -129,5 +129,4 @@ upload_to_release = true
 commit_parser = "conventional"
 build_command = "uv build"
 repository = "https://github.com/codemug/aiofmp"
-# Explicit token mapping to silence 'Token value is missing!' warning
-pypi_token = "${PYPI_API_TOKEN}"
+starting_version = "0.1.0"

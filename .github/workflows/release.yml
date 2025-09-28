@@ -47,7 +47,6 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     needs: quick-test
-    # Only run semantic-release on direct pushes to main (not on tag push events)
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
@@ -91,6 +90,11 @@ jobs:
         run: |
           # python-semantic-release expects PYPI token in environment variable named PYPI_API_TOKEN or configured in pyproject
           set -e
+          echo "Diagnostic: token env variables present?";
+          for v in PYPI_API_TOKEN PYPI_TOKEN GITHUB_TOKEN; do
+            if [ -n "${!v}" ]; then echo "$v length: ${#GITHUB_TOKEN}" | sed 's/./*/g' >/dev/null; fi
+          done
+          if [ -z "${PYPI_API_TOKEN}" ]; then echo "PYPI_API_TOKEN is empty" >&2; fi
           if ! uv run semantic-release --version >/dev/null 2>&1; then
             echo "semantic-release entrypoint not found; attempting module invocation" >&2
           fi
