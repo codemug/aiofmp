@@ -125,6 +125,6 @@ tag_format = "v{version}"
 changelog_file = "CHANGELOG.md"
 upload_to_pypi = true
 upload_to_release = true
-commit_parser = "angular"
+commit_parser = "conventional"
 build_command = "uv build"
 repository = "https://github.com/codemug/aiofmp"
