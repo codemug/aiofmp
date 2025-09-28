@@ -53,11 +53,6 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -68,31 +63,14 @@ jobs:
         with:
           version: "latest"
 
-      - name: Install dependencies
+      - name: Install dependencies (with dev)
         run: |
           uv sync --dev
 
-      - name: Build package
-        run: |
-          uv build
-
-      - name: Install Node.js dependencies
-        run: npm install
-
-      - name: Semantic Release
-        id: semantic-release
-        run: |
-          output=$(npx semantic-release --dry-run=false 2>&1)
-          echo "$output"
-          if echo "$output" | grep -q "Published release"; then
-            echo "new-release-published=true" >> $GITHUB_OUTPUT
-          else
-            echo "new-release-published=false" >> $GITHUB_OUTPUT
-          fi
+      - name: Run python-semantic-release (publish)
         env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish to PyPI
-        if: steps.semantic-release.outputs.new-release-published == 'true'
         run: |
-          uv publish --token ${{ secrets.PYPI_API_TOKEN }}
+          # python-semantic-release expects PYPI token in environment variable named PYPI_API_TOKEN or configured in pyproject
+          uv run semantic-release publish

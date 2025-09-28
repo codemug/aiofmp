@@ -1,12 +1,12 @@
 # Release Process Documentation
 
-This document describes the automated release process for aiofmp using Semantic Release and GitHub Actions.
+This document describes the automated release process for aiofmp using python-semantic-release and GitHub Actions.
 
 ## Overview
 
 The release process is fully automated and triggered by commits to the `main` branch. It uses:
 
-- **Semantic Release**: For automated versioning based on conventional commits
+- **python-semantic-release**: For automated versioning based on conventional commits
 - **GitHub Actions**: For CI/CD pipeline
 - **PyPI**: For package distribution
 - **Conventional Commits**: For commit message standardization
@@ -15,7 +15,7 @@ The release process is fully automated and triggered by commits to the `main` br
 
 ### 1. Commit Message Analysis
 
-Semantic Release analyzes commit messages to determine the next version:
+python-semantic-release analyzes commit messages to determine the next version:
 
 - `feat:` → Minor version bump (1.0.0 → 1.1.0)
 - `fix:` → Patch version bump (1.0.0 → 1.0.1)
@@ -27,7 +27,7 @@ When a new version is detected:
 
 1. **Tests Run**: All tests must pass
 2. **Linting**: Code quality checks
-3. **Version Bump**: Semantic Release determines new version
+3. **Version Bump**: python-semantic-release determines new version
 4. **Changelog Update**: CHANGELOG.md is automatically updated
 5. **Git Tag**: A new tag is created (e.g., `v1.1.0`)
 6. **PyPI Publish**: Package is published to PyPI
@@ -40,7 +40,8 @@ When a new version is detected:
 Run the setup script to configure your repository:
 
 ```bash
-./scripts/setup-release.sh
+# (Optional) helper script if present
+./scripts/setup-release.sh || true
 ```
 
 This will:
@@ -145,7 +146,7 @@ If you need to trigger a release manually:
 1. **Tests Failing**: Ensure all tests pass before pushing
 2. **Linting Errors**: Run `uv run ruff check .` and `uv run ruff format .`
 3. **PyPI Authentication**: Verify the `PYPI_API_TOKEN` secret is set correctly
-4. **Version Not Bumping**: Check that commit messages follow conventional format
+4. **Version Not Bumping**: Check that commit messages follow conventional format and workflow ran on `main`
 
 ### Debug Commands
 
@@ -180,9 +181,7 @@ The release process uses several configuration files:
 
 - `.github/workflows/release.yml`: GitHub Actions workflow
 - `.github/workflows/test.yml`: Test workflow for PRs
-- `.releaserc.json`: Semantic Release configuration
-- `pyproject.toml`: Python package configuration
-- `package.json`: Node.js package configuration (for semantic release)
+- `pyproject.toml`: Python package & release configuration (contains [tool.semantic_release])
 - `.gitmessage`: Git commit message template
 
 ## Best Practices

@@ -63,6 +63,7 @@ dev = [
     "isort>=5.12.0",
     "mypy>=1.0.0",
     "ruff>=0.6.0",
+    "python-semantic-release>=9.8.0",
 ]
 
 [project.scripts]
@@ -116,3 +117,14 @@ indent-style = "space"
 dev = [
     "ruff>=0.13.2",
 ]
+
+[tool.semantic_release]
+branch = "main"
+version_source = "tag"
+tag_format = "v{version}"
+changelog_file = "CHANGELOG.md"
+upload_to_pypi = true
+upload_to_release = true
+commit_parser = "angular"
+build_command = "uv build"
+repository = "https://github.com/codemug/aiofmp"

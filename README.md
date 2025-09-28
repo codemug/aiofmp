@@ -1,5 +1,7 @@
 # aiofmp
 
+[![PyPI Version](https://img.shields.io/pypi/v/aiofmp.svg?color=0A7BBB)](https://pypi.org/project/aiofmp/)
+
 **aiofmp** is a comprehensive Python SDK that provides seamless access to the Financial Modeling Prep API through an intuitive, category-based interface. Built with asyncio for high-performance concurrent operations, it offers:
 
 - **Complete FMP API Coverage**: Access to 22+ API categories including financial statements, market data, news, technical indicators, and more
@@ -452,8 +454,8 @@ chore: update dependencies
    - Add it to GitHub Secrets as `PYPI_API_TOKEN`
 
 3. **Update Repository URLs**:
-   - Update URLs in `pyproject.toml` and `package.json`
-   - Update author information
+  - Update URLs in `pyproject.toml`
+  - Update author information
 
 4. **Make Changes and Commit**:
    ```bash
