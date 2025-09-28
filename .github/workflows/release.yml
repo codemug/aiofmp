@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -45,6 +47,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     needs: quick-test
+    # Only run semantic-release on direct pushes to main (not on tag push events)
     if: github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
@@ -67,9 +70,23 @@ jobs:
         run: |
           uv sync --dev
 
+      - name: Release diagnostics
+        run: |
+          echo "Existing tags:" && git tag --list | sort -V || true
+          echo "Last 15 commits (on main):" && git --no-pager log --oneline -15 || true
+          echo "Conventional-looking commits since last tag:" && {
+            last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo '')
+            if [ -n "$last_tag" ]; then
+              git log --oneline ${last_tag}..HEAD | grep -E '^(feat|fix|perf|refactor|docs|test|chore)(\(|:)' || echo "(none)"
+            else
+              echo "(no tag yet)"
+            fi
+          }
+
       - name: Run python-semantic-release (publish)
         env:
           PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # python-semantic-release expects PYPI token in environment variable named PYPI_API_TOKEN or configured in pyproject
@@ -79,3 +96,40 @@ jobs:
           fi
           # Prefer module form to avoid missing console script edge cases
           uv run python -m semantic_release publish
+
+  tag-release:
+    name: Ensure GitHub Release for Tag
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Checkout (shallow)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check/Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag_name="${GITHUB_REF#refs/tags/}"
+          echo "Processing tag: $tag_name"
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${tag_name}")
+          if [ "$code" = "200" ]; then
+            echo "GitHub Release already exists for $tag_name; nothing to do."; exit 0
+          fi
+          echo "No existing release; creating one with generated notes.";
+          # gh CLI is pre-installed on ubuntu-latest
+          echo "Generating release..."
+          gh release create "$tag_name" --generate-notes || {
+            echo "Fallback: creating minimal release via API";
+            curl -s -X POST \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases" \
+              -d "$(jq -n --arg tag "$tag_name" '{tag_name:$tag, name:$tag, body:"Automated release."}')" >/dev/null;
+          }
+          echo "Release ensured for $tag_name"
