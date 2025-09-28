@@ -73,4 +73,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # python-semantic-release expects PYPI token in environment variable named PYPI_API_TOKEN or configured in pyproject
-          uv run semantic-release publish
+          set -e
+          if ! uv run semantic-release --version >/dev/null 2>&1; then
+            echo "semantic-release entrypoint not found; attempting module invocation" >&2
+          fi
+          # Prefer module form to avoid missing console script edge cases
+          uv run python -m semantic_release publish
