@@ -71,13 +71,11 @@ jobs:
 
       - name: Run Semantic Release
         env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Checking for new version..."
-          NEW_VERSION=$(uv run semantic-release version --print)
-          echo "New version would be: $NEW_VERSION"
-          
-          echo "Running semantic release..."
+          uv run semantic-release --verbose version
           uv run semantic-release --verbose publish
           uv run twine upload dist/* --verbose
 
