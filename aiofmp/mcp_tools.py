@@ -8,6 +8,9 @@ for the Financial Modeling Prep API.
 import logging
 from typing import Any
 
+from fastmcp.tools.tool import ToolResult, Tool
+from fastmcp.tools.tool import FunctionTool
+
 from .mcp_server import mcp
 
 logger = logging.getLogger(__name__)
@@ -15,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 def create_tool_response(
     data: Any, success: bool = True, message: str = ""
-) -> dict[str, Any]:
+) -> ToolResult:
     """
     Create a standardized response for MCP tools.
 
@@ -25,14 +28,25 @@ def create_tool_response(
         message: Optional message to include
 
     Returns:
-        Standardized response dictionary
+        ToolResult object for MCP tools
     """
     response = {"success": success, "data": data}
 
     if message:
         response["message"] = message
 
-    return response
+    # Check if text content should be included alongside structured content
+    import os
+    include_text_content = os.getenv("MCP_INCLUDE_TEXT_CONTENT", "false").lower() == "true"
+    
+    if include_text_content:
+        # Return both text and structured content
+        import json
+        text_content = json.dumps(response, indent=2)
+        return ToolResult(content=text_content, structured_content=response)
+    else:
+        # Return with structured content only (text content empty when structured content is present)
+        return ToolResult(content="", structured_content=response)
 
 
 def handle_async_operation(operation_name: str):

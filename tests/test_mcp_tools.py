@@ -28,17 +28,27 @@ class TestMCPToolsUtilities:
         data = [{"symbol": "AAPL", "price": 150.0}]
         response = create_tool_response(data, success=True, message="Test message")
 
-        assert response["success"] is True
-        assert response["data"] == data
-        assert response["message"] == "Test message"
+        # Check that it's a ToolResult object
+        from fastmcp.tools.tool import ToolResult
+        assert isinstance(response, ToolResult)
+        
+        # Check structured content
+        assert response.structured_content["success"] is True
+        assert response.structured_content["data"] == data
+        assert response.structured_content["message"] == "Test message"
 
     def test_create_tool_response_failure(self):
         """Test creating a failed tool response."""
         response = create_tool_response(None, success=False, message="Error message")
 
-        assert response["success"] is False
-        assert response["data"] is None
-        assert response["message"] == "Error message"
+        # Check that it's a ToolResult object
+        from fastmcp.tools.tool import ToolResult
+        assert isinstance(response, ToolResult)
+        
+        # Check structured content
+        assert response.structured_content["success"] is False
+        assert response.structured_content["data"] is None
+        assert response.structured_content["message"] == "Error message"
 
     def test_validate_symbol_valid(self):
         """Test validating a valid symbol."""
@@ -113,9 +123,14 @@ class TestSearchTools:
 
             result = await search_symbols.fn("AAPL", limit=10, exchange="NASDAQ")
 
-            assert result["success"] is True
-            assert result["data"] == mock_data
-            assert "Found 1 symbols matching 'AAPL'" in result["message"]
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            
+            # Check structured content
+            assert result.structured_content["success"] is True
+            assert result.structured_content["data"] == mock_data
+            assert "Found 1 symbols matching 'AAPL'" in result.structured_content["message"]
 
     @pytest.mark.asyncio
     async def test_search_symbols_error(self):
@@ -127,9 +142,14 @@ class TestSearchTools:
 
             result = await search_symbols.fn("AAPL")
 
-            assert result["success"] is False
-            assert result["data"] == []
-            assert "Error searching symbols" in result["message"]
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            
+            # Check structured content
+            assert result.structured_content["success"] is False
+            assert result.structured_content["data"] == []
+            assert "Error searching symbols" in result.structured_content["message"]
 
     @pytest.mark.asyncio
     async def test_search_companies_success(self):
@@ -143,9 +163,14 @@ class TestSearchTools:
 
             result = await search_companies.fn("Apple", limit=5, exchange="NASDAQ")
 
-            assert result["success"] is True
-            assert result["data"] == mock_data
-            assert "Found 1 companies matching 'Apple'" in result["message"]
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            
+            # Check structured content
+            assert result.structured_content["success"] is True
+            assert result.structured_content["data"] == mock_data
+            assert "Found 1 companies matching 'Apple'" in result.structured_content["message"]
 
     @pytest.mark.asyncio
     async def test_screen_stocks_success(self):
@@ -163,9 +188,14 @@ class TestSearchTools:
                 sector="Technology", market_cap_more_than=1000000000, limit=100
             )
 
-            assert result["success"] is True
-            assert result["data"] == mock_data
-            assert "Found 1 stocks matching screening criteria" in result["message"]
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            
+            # Check structured content
+            assert result.structured_content["success"] is True
+            assert result.structured_content["data"] == mock_data
+            assert "Found 1 stocks matching screening criteria" in result.structured_content["message"]
 
 
 class TestChartTools:
@@ -193,11 +223,16 @@ class TestChartTools:
                 "AAPL", "2025-01-01", "2025-01-31"
             )
 
-            assert result["success"] is True
-            assert result["data"] == mock_data
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            
+            # Check structured content
+            assert result.structured_content["success"] is True
+            assert result.structured_content["data"] == mock_data
             assert (
                 "Retrieved 1 comprehensive historical price records for AAPL"
-                in result["message"]
+                in result.structured_content["message"]
             )
 
     @pytest.mark.asyncio
@@ -220,9 +255,14 @@ class TestChartTools:
 
             result = await get_intraday_1min.fn("AAPL", "2025-01-01", "2025-01-02")
 
-            assert result["success"] is True
-            assert result["data"] == mock_data
-            assert "Retrieved 1 1-minute intraday records for AAPL" in result["message"]
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            
+            # Check structured content
+            assert result.structured_content["success"] is True
+            assert result.structured_content["data"] == mock_data
+            assert "Retrieved 1 1-minute intraday records for AAPL" in result.structured_content["message"]
 
 
 class TestCompanyTools:
@@ -247,9 +287,14 @@ class TestCompanyTools:
 
             result = await get_company_profile.fn("AAPL")
 
-            assert result["success"] is True
-            assert result["data"] == mock_data
-            assert "Retrieved company profile for AAPL" in result["message"]
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            
+            # Check structured content
+            assert result.structured_content["success"] is True
+            assert result.structured_content["data"] == mock_data
+            assert "Retrieved company profile for AAPL" in result.structured_content["message"]
 
     @pytest.mark.asyncio
     async def test_get_market_cap_success(self):
@@ -265,9 +310,14 @@ class TestCompanyTools:
 
             result = await get_market_cap.fn("AAPL")
 
-            assert result["success"] is True
-            assert result["data"] == mock_data
-            assert "Retrieved market cap data for AAPL" in result["message"]
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            
+            # Check structured content
+            assert result.structured_content["success"] is True
+            assert result.structured_content["data"] == mock_data
+            assert "Retrieved market cap data for AAPL" in result.structured_content["message"]
 
 
 class TestMCPToolsIntegration:
@@ -283,9 +333,14 @@ class TestMCPToolsIntegration:
 
             result = await search_symbols.fn("INVALID")
 
-            assert result["success"] is False
-            assert result["data"] == []
-            assert "Error searching symbols" in result["message"]
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            
+            # Check structured content
+            assert result.structured_content["success"] is False
+            assert result.structured_content["data"] == []
+            assert "Error searching symbols" in result.structured_content["message"]
 
     @pytest.mark.asyncio
     async def test_tool_validation(self):
@@ -296,13 +351,17 @@ class TestMCPToolsIntegration:
 
             # Test with invalid symbol
             result = await search_symbols.fn("")
-            assert result["success"] is False
-            assert "Query must be a non-empty string" in result["message"]
+            # Check that it's a ToolResult object
+            from fastmcp.tools.tool import ToolResult
+            assert isinstance(result, ToolResult)
+            assert result.structured_content["success"] is False
+            assert "Query must be a non-empty string" in result.structured_content["message"]
 
             # Test with invalid limit
             result = await search_symbols.fn("AAPL", limit=-1)
-            assert result["success"] is False
-            assert "Limit must be positive" in result["message"]
+            assert isinstance(result, ToolResult)
+            assert result.structured_content["success"] is False
+            assert "Limit must be positive" in result.structured_content["message"]
 
 
 if __name__ == "__main__":
