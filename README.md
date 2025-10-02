@@ -125,6 +125,11 @@ aiofmp-mcp-server --api-key your_api_key_here
 aiofmp-mcp-server --log-level DEBUG
 ```
 
+**Include text content alongside structured content:**
+```bash
+aiofmp-mcp-server --text-content
+```
+
 #### Claude Desktop Integration
 
 Add to your Claude Desktop configuration (`claude_desktop_config.json`):
@@ -174,8 +179,11 @@ aiofmp-mcp-server --api-key your_api_key_here
 # Debug logging
 aiofmp-mcp-server --log-level DEBUG
 
+# Include text content alongside structured content
+aiofmp-mcp-server --text-content
+
 # All options
-aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO --api-key your_key
+aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO --api-key your_key --text-content
 ```
 
 **Command Options:**
@@ -184,6 +192,7 @@ aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO
 - `--port`: Port for HTTP transport (default: `3000`)
 - `--log-level`: Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, default: `INFO`)
 - `--api-key`: FMP API key (can also be set via `FMP_API_KEY` environment variable)
+- `--text-content`: Include text content alongside structured content in MCP tool responses (default: text content is empty when structured content is present)
 
 ### Available API Categories
 

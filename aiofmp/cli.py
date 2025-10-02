@@ -41,8 +41,14 @@ logger = logging.getLogger(__name__)
     "--api-key",
     help="FMP API key (can also be set via FMP_API_KEY environment variable)",
 )
+@click.option(
+    "--text-content",
+    is_flag=True,
+    default=False,
+    help="Include text content alongside structured content in MCP tool responses (default: text content is empty when structured content is present)",
+)
 def mcp_server(
-    transport: str, host: str, port: int, log_level: str, api_key: str | None
+    transport: str, host: str, port: int, log_level: str, api_key: str | None, text_content: bool
 ):
     """
     Start the aiofmp MCP server.
@@ -62,6 +68,9 @@ def mcp_server(
 
         # Set log level
         aiofmp-mcp-server --log-level DEBUG
+
+        # Include text content alongside structured content
+        aiofmp-mcp-server --text-content
     """
     # Set logging level
     logging.getLogger().setLevel(getattr(logging, log_level.upper()))
@@ -74,6 +83,9 @@ def mcp_server(
     os.environ["MCP_TRANSPORT"] = transport
     os.environ["MCP_HOST"] = host
     os.environ["MCP_PORT"] = str(port)
+    
+    # Set text content flag
+    os.environ["MCP_INCLUDE_TEXT_CONTENT"] = str(text_content)
 
     # Validate API key
     if not os.getenv("FMP_API_KEY"):
