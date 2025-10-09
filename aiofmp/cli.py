@@ -48,7 +48,12 @@ logger = logging.getLogger(__name__)
     help="Include text content alongside structured content in MCP tool responses (default: text content is empty when structured content is present)",
 )
 def mcp_server(
-    transport: str, host: str, port: int, log_level: str, api_key: str | None, text_content: bool
+    transport: str,
+    host: str,
+    port: int,
+    log_level: str,
+    api_key: str | None,
+    text_content: bool,
 ):
     """
     Start the aiofmp MCP server.
