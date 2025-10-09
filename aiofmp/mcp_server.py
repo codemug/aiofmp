@@ -9,10 +9,8 @@ import asyncio
 import logging
 import os
 import sys
-from typing import Any
 
 from fastmcp import FastMCP
-from fastmcp.tools.tool_transform import ToolTransformConfig
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

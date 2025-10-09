@@ -8,8 +8,7 @@ for the Financial Modeling Prep API.
 import logging
 from typing import Any
 
-from fastmcp.tools.tool import ToolResult, Tool
-from fastmcp.tools.tool import FunctionTool
+from fastmcp.tools.tool import ToolResult
 
 from .mcp_server import mcp
 
@@ -38,7 +37,7 @@ def create_tool_response(
     # Check if text content should be included alongside structured content
     import os
     include_text_content = os.getenv("MCP_INCLUDE_TEXT_CONTENT", "false").lower() == "true"
-    
+
     if include_text_content:
         # Return both text and structured content
         import json
