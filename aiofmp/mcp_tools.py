@@ -36,11 +36,15 @@ def create_tool_response(
 
     # Check if text content should be included alongside structured content
     import os
-    include_text_content = os.getenv("MCP_INCLUDE_TEXT_CONTENT", "false").lower() == "true"
+
+    include_text_content = (
+        os.getenv("MCP_INCLUDE_TEXT_CONTENT", "false").lower() == "true"
+    )
 
     if include_text_content:
         # Return both text and structured content
         import json
+
         text_content = json.dumps(response, indent=2)
         return ToolResult(content=text_content, structured_content=response)
     else:
