@@ -31,7 +31,7 @@ class TestMCPToolsUtilities:
         # Check that it's a ToolResult object
         from fastmcp.tools.tool import ToolResult
         assert isinstance(response, ToolResult)
-        
+
         # Check structured content
         assert response.structured_content["success"] is True
         assert response.structured_content["data"] == data
@@ -44,7 +44,7 @@ class TestMCPToolsUtilities:
         # Check that it's a ToolResult object
         from fastmcp.tools.tool import ToolResult
         assert isinstance(response, ToolResult)
-        
+
         # Check structured content
         assert response.structured_content["success"] is False
         assert response.structured_content["data"] is None
@@ -126,7 +126,7 @@ class TestSearchTools:
             # Check that it's a ToolResult object
             from fastmcp.tools.tool import ToolResult
             assert isinstance(result, ToolResult)
-            
+
             # Check structured content
             assert result.structured_content["success"] is True
             assert result.structured_content["data"] == mock_data
@@ -145,7 +145,7 @@ class TestSearchTools:
             # Check that it's a ToolResult object
             from fastmcp.tools.tool import ToolResult
             assert isinstance(result, ToolResult)
-            
+
             # Check structured content
             assert result.structured_content["success"] is False
             assert result.structured_content["data"] == []
@@ -166,7 +166,7 @@ class TestSearchTools:
             # Check that it's a ToolResult object
             from fastmcp.tools.tool import ToolResult
             assert isinstance(result, ToolResult)
-            
+
             # Check structured content
             assert result.structured_content["success"] is True
             assert result.structured_content["data"] == mock_data
@@ -191,7 +191,7 @@ class TestSearchTools:
             # Check that it's a ToolResult object
             from fastmcp.tools.tool import ToolResult
             assert isinstance(result, ToolResult)
-            
+
             # Check structured content
             assert result.structured_content["success"] is True
             assert result.structured_content["data"] == mock_data
@@ -226,7 +226,7 @@ class TestChartTools:
             # Check that it's a ToolResult object
             from fastmcp.tools.tool import ToolResult
             assert isinstance(result, ToolResult)
-            
+
             # Check structured content
             assert result.structured_content["success"] is True
             assert result.structured_content["data"] == mock_data
@@ -258,7 +258,7 @@ class TestChartTools:
             # Check that it's a ToolResult object
             from fastmcp.tools.tool import ToolResult
             assert isinstance(result, ToolResult)
-            
+
             # Check structured content
             assert result.structured_content["success"] is True
             assert result.structured_content["data"] == mock_data
@@ -290,7 +290,7 @@ class TestCompanyTools:
             # Check that it's a ToolResult object
             from fastmcp.tools.tool import ToolResult
             assert isinstance(result, ToolResult)
-            
+
             # Check structured content
             assert result.structured_content["success"] is True
             assert result.structured_content["data"] == mock_data
@@ -313,7 +313,7 @@ class TestCompanyTools:
             # Check that it's a ToolResult object
             from fastmcp.tools.tool import ToolResult
             assert isinstance(result, ToolResult)
-            
+
             # Check structured content
             assert result.structured_content["success"] is True
             assert result.structured_content["data"] == mock_data
@@ -336,7 +336,7 @@ class TestMCPToolsIntegration:
             # Check that it's a ToolResult object
             from fastmcp.tools.tool import ToolResult
             assert isinstance(result, ToolResult)
-            
+
             # Check structured content
             assert result.structured_content["success"] is False
             assert result.structured_content["data"] == []

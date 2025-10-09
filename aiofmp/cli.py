@@ -83,7 +83,7 @@ def mcp_server(
     os.environ["MCP_TRANSPORT"] = transport
     os.environ["MCP_HOST"] = host
     os.environ["MCP_PORT"] = str(port)
-    
+
     # Set text content flag
     os.environ["MCP_INCLUDE_TEXT_CONTENT"] = str(text_content)
 
