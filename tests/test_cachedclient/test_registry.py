@@ -42,10 +42,16 @@ class TestEndpointRegistry:
     def test_all_endpoints(self):
         registry = EndpointRegistry()
         ep1 = CacheableEndpoint(
-            category="chart", method="m1", api_endpoint="e1", pattern=TemporalPattern.DATE_RANGE
+            category="chart",
+            method="m1",
+            api_endpoint="e1",
+            pattern=TemporalPattern.DATE_RANGE,
         )
         ep2 = CacheableEndpoint(
-            category="statements", method="m2", api_endpoint="e2", pattern=TemporalPattern.PERIOD_BASED
+            category="statements",
+            method="m2",
+            api_endpoint="e2",
+            pattern=TemporalPattern.PERIOD_BASED,
         )
         registry.register(ep1)
         registry.register(ep2)

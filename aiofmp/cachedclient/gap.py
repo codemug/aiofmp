@@ -68,7 +68,9 @@ def compute_gaps(
     return gaps
 
 
-def normalize_to_date(value: str | date | None, param_type: DateParamType) -> date | None:
+def normalize_to_date(
+    value: str | date | None, param_type: DateParamType
+) -> date | None:
     """Convert a date parameter value to a date object.
 
     Args:
