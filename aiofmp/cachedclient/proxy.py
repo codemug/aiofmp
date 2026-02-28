@@ -2,11 +2,11 @@
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import date
-from typing import Any, Callable
+from typing import Any
 
 from .gap import (
-    DateParamType,
     DateRange,
     compute_gaps,
     denormalize_from_date,

@@ -1,6 +1,5 @@
 """Integration tests for the CachedClient with mocked FmpClient."""
 
-from datetime import date
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
