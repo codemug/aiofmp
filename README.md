@@ -12,6 +12,7 @@
 - **Comprehensive Error Handling**: Robust error handling with custom exceptions and retry logic
 - **Rate Limiting**: Built-in rate limiting and retry logic to respect API limits
 - **AI-Ready**: MCP tools designed specifically for AI assistants with natural language prompts
+- **CachedClient**: Intelligent caching wrapper that stores time-series data locally and only fetches missing date ranges from the API
 
 ### Key Features
 
@@ -79,6 +80,50 @@ async def main():
 asyncio.run(main())
 ```
 
+### CachedClient Usage
+
+The CachedClient wraps `FmpClient` with an intelligent caching layer. It intercepts time-series API calls, stores data locally in Parquet files, and only fetches missing date ranges from the FMP API on subsequent calls. This dramatically reduces API usage when working with historical data.
+
+By default, data is cached under `~/.aiofmp/cache`. Override the location with the `AIOFMP_CACHE_FILE_PATH` environment variable.
+
+```python
+import asyncio
+from aiofmp import FmpClient
+from aiofmp.cachedclient import CachedClient
+
+async def main():
+    fmp = FmpClient(api_key="your_api_key_here")
+    cached = CachedClient(fmp)  # caches to ~/.aiofmp/cache by default
+
+    async with cached:
+        # First call: fetches from FMP API, stores locally in Parquet
+        data = await cached.chart.historical_price_full("AAPL", "2020-01-01", "2023-12-31")
+        print(f"Fetched {len(data)} records")
+
+        # Second call: extends the range — only fetches the 2024 gap from the API
+        data = await cached.chart.historical_price_full("AAPL", "2020-01-01", "2025-01-01")
+        print(f"Got {len(data)} records (2020-2023 from cache, 2024+ from API)")
+
+        # Repeated call with same range: fully served from cache, zero API calls
+        data = await cached.chart.historical_price_full("AAPL", "2020-01-01", "2025-01-01")
+
+        # Financial statements: merges fresh data with stored history
+        stmts = await cached.statements.income_statement("AAPL", limit=5, period="annual")
+
+        # Non-cacheable endpoints pass through unchanged
+        profile = await cached.company.profile("AAPL")
+
+asyncio.run(main())
+```
+
+**Supported caching patterns:**
+
+- **Date-range endpoints** (chart, economics, calendar, news, technical indicators, etc.): gap detection fetches only the missing date ranges
+- **Period-based endpoints** (income statements, balance sheets, ratios, etc.): fetches fresh data and merges with stored historical records
+- **Non-cacheable endpoints** (profiles, quotes, search, etc.): pass through directly to the FMP API
+
+**Storage is pluggable** — `ParquetStorage` is the built-in default, but you can pass any `StorageBackend` subclass to `CachedClient(fmp, storage=my_storage)`.
+
 ### MCP Server Usage
 
 The aiofmp package includes a built-in MCP server that exposes all FMP APIs as AI-friendly tools.
@@ -129,6 +174,13 @@ aiofmp-mcp-server --log-level DEBUG
 ```bash
 aiofmp-mcp-server --text-content
 ```
+
+**Enable local caching of time-series data:**
+```bash
+aiofmp-mcp-server --cached
+```
+
+When `--cached` is enabled, the MCP server uses `CachedClient` under the hood. Time-series API calls are cached locally in Parquet files so repeated queries for the same historical data don't consume API quota. Cache directory defaults to `~/.aiofmp/cache` (override with `AIOFMP_CACHE_FILE_PATH`).
 
 #### Claude Desktop Integration
 
@@ -182,8 +234,11 @@ aiofmp-mcp-server --log-level DEBUG
 # Include text content alongside structured content
 aiofmp-mcp-server --text-content
 
+# Enable local caching
+aiofmp-mcp-server --cached
+
 # All options
-aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO --api-key your_key --text-content
+aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO --api-key your_key --text-content --cached
 ```
 
 **Command Options:**
@@ -193,6 +248,7 @@ aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO
 - `--log-level`: Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, default: `INFO`)
 - `--api-key`: FMP API key (can also be set via `FMP_API_KEY` environment variable)
 - `--text-content`: Include text content alongside structured content in MCP tool responses (default: text content is empty when structured content is present)
+- `--cached`: Enable CachedClient to cache time-series data locally in Parquet files, minimizing API calls (default: off). Cache dir: `~/.aiofmp/cache` (override with `AIOFMP_CACHE_FILE_PATH`)
 
 ### Available API Categories
 
@@ -232,7 +288,7 @@ The `examples/` directory contains comprehensive examples for each API category:
 python examples/fmp_search_example.py
 python examples/fmp_company_example.py
 python examples/fmp_statements_example.py
-python examples/fmp_technical_indicators_example.py
+python examples/fmp_cachedclient_example.py
 ```
 
 ### MCP Server Examples
@@ -263,6 +319,7 @@ python examples/fmp_technical_indicators_example.py
 
 ### Example Files
 
+- `fmp_cachedclient_example.py` - CachedClient caching wrapper
 - `fmp_analyst_example.py` - Analyst estimates and ratings
 - `fmp_calendar_example.py` - Earnings and dividend calendars
 - `fmp_chart_example.py` - Historical price data
@@ -308,6 +365,8 @@ aiofmp-mcp-server --log-level DEBUG
 | `MCP_HOST` | MCP server host (HTTP mode) | `localhost` | No |
 | `MCP_PORT` | MCP server port (HTTP mode) | `3000` | No |
 | `MCP_LOG_LEVEL` | Logging level | `INFO` | No |
+| `AIOFMP_CACHED` | Enable CachedClient (`true`/`false`) | `false` | No |
+| `AIOFMP_CACHE_FILE_PATH` | Cache directory for Parquet files | `~/.aiofmp/cache` | No |
 
 ### MCP Server Modes
 
@@ -397,7 +456,7 @@ uv run pytest --cov=aiofmp --cov-report=html
 - **Async Operations**: All API calls are non-blocking
 - **Connection Pooling**: Efficient HTTP connection management
 - **Rate Limiting**: Built-in rate limiting to respect API limits
-- **Caching**: Optional response caching for improved performance
+- **CachedClient**: Intelligent time-series caching with gap detection — only fetches missing data from the API
 - **Concurrent Requests**: Support for multiple simultaneous API calls
 
 ## Security

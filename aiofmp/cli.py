@@ -47,6 +47,12 @@ logger = logging.getLogger(__name__)
     default=False,
     help="Include text content alongside structured content in MCP tool responses (default: text content is empty when structured content is present)",
 )
+@click.option(
+    "--cached",
+    is_flag=True,
+    default=False,
+    help="Enable CachedClient: cache time-series data locally in Parquet files to minimize API calls. Cache dir defaults to ~/.aiofmp/cache (override with AIOFMP_CACHE_FILE_PATH).",
+)
 def mcp_server(
     transport: str,
     host: str,
@@ -54,6 +60,7 @@ def mcp_server(
     log_level: str,
     api_key: str | None,
     text_content: bool,
+    cached: bool,
 ):
     """
     Start the aiofmp MCP server.
@@ -76,6 +83,9 @@ def mcp_server(
 
         # Include text content alongside structured content
         aiofmp-mcp-server --text-content
+
+        # Enable local caching of time-series data
+        aiofmp-mcp-server --cached
     """
     # Set logging level
     logging.getLogger().setLevel(getattr(logging, log_level.upper()))
@@ -92,6 +102,10 @@ def mcp_server(
     # Set text content flag
     os.environ["MCP_INCLUDE_TEXT_CONTENT"] = str(text_content)
 
+    # Set cached flag
+    if cached:
+        os.environ["AIOFMP_CACHED"] = "true"
+
     # Validate API key
     if not os.getenv("FMP_API_KEY"):
         logger.error("FMP_API_KEY environment variable is required")
@@ -100,6 +114,9 @@ def mcp_server(
         sys.exit(1)
 
     logger.info(f"Starting aiofmp MCP server with {transport} transport")
+    if cached:
+        cache_dir = os.environ.get("AIOFMP_CACHE_FILE_PATH", "~/.aiofmp/cache")
+        logger.info(f"CachedClient enabled, cache dir: {cache_dir}")
     if transport == "http":
         logger.info(f"Server will be available at http://{host}:{port}")
 
