@@ -90,7 +90,10 @@ def build_default_registry() -> EndpointRegistry:
         ("historical_price_light", "historical-price-eod/light"),
         ("historical_price_full", "historical-price-eod/full"),
         ("historical_price_unadjusted", "historical-price-eod/non-split-adjusted"),
-        ("historical_price_dividend_adjusted", "historical-price-eod/dividend-adjusted"),
+        (
+            "historical_price_dividend_adjusted",
+            "historical-price-eod/dividend-adjusted",
+        ),
     ]:
         registry.register(
             CacheableEndpoint(
@@ -248,7 +251,13 @@ def build_default_registry() -> EndpointRegistry:
                 extra_key_args=["period_length", "timeframe"],
                 date_param_type=DateParamType.DATE_OBJ,
                 response_date_format="%Y-%m-%d %H:%M:%S",
-                call_params=["symbol", "period_length", "timeframe", "from_date", "to_date"],
+                call_params=[
+                    "symbol",
+                    "period_length",
+                    "timeframe",
+                    "from_date",
+                    "to_date",
+                ],
             )
         )
 

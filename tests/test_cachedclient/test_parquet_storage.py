@@ -26,11 +26,17 @@ def sample_records() -> list[dict]:
 class TestKeyToPath:
     def test_simple_key(self, tmp_path: Path):
         path = _key_to_path(tmp_path, ("income-statement", "AAPL", "annual"))
-        assert path == tmp_path / "cachedclient_data" / "income-statement" / "AAPL" / "annual"
+        assert (
+            path
+            == tmp_path / "cachedclient_data" / "income-statement" / "AAPL" / "annual"
+        )
 
     def test_key_with_slashes(self, tmp_path: Path):
         path = _key_to_path(tmp_path, ("historical-price-eod/full", "AAPL"))
-        assert path == tmp_path / "cachedclient_data" / "historical-price-eod__full" / "AAPL"
+        assert (
+            path
+            == tmp_path / "cachedclient_data" / "historical-price-eod__full" / "AAPL"
+        )
 
     def test_single_part_key_uses_global(self, tmp_path: Path):
         path = _key_to_path(tmp_path, ("treasury-rates",))
@@ -39,7 +45,9 @@ class TestKeyToPath:
 
 class TestParquetStorageWriteAndRead:
     @pytest.mark.asyncio
-    async def test_write_and_read(self, storage: ParquetStorage, sample_records: list[dict]):
+    async def test_write_and_read(
+        self, storage: ParquetStorage, sample_records: list[dict]
+    ):
         await storage.initialize()
         key = ("historical-price-eod/full", "AAPL")
         await storage.write(key, sample_records)
@@ -63,19 +71,25 @@ class TestParquetStorageWriteAndRead:
         assert result == []
 
     @pytest.mark.asyncio
-    async def test_read_with_date_filter(self, storage: ParquetStorage, sample_records: list[dict]):
+    async def test_read_with_date_filter(
+        self, storage: ParquetStorage, sample_records: list[dict]
+    ):
         await storage.initialize()
         key = ("historical-price-eod/full", "AAPL")
         await storage.write(key, sample_records)
 
-        result = await storage.read(key, from_date=date(2024, 1, 3), to_date=date(2024, 1, 4))
+        result = await storage.read(
+            key, from_date=date(2024, 1, 3), to_date=date(2024, 1, 4)
+        )
         assert len(result) == 2
         dates = [r["date"] for r in result]
         assert "2024-01-03" in dates
         assert "2024-01-04" in dates
 
     @pytest.mark.asyncio
-    async def test_read_with_from_date_only(self, storage: ParquetStorage, sample_records: list[dict]):
+    async def test_read_with_from_date_only(
+        self, storage: ParquetStorage, sample_records: list[dict]
+    ):
         await storage.initialize()
         key = ("test", "AAPL")
         await storage.write(key, sample_records)
@@ -84,7 +98,9 @@ class TestParquetStorageWriteAndRead:
         assert len(result) == 2
 
     @pytest.mark.asyncio
-    async def test_read_with_to_date_only(self, storage: ParquetStorage, sample_records: list[dict]):
+    async def test_read_with_to_date_only(
+        self, storage: ParquetStorage, sample_records: list[dict]
+    ):
         await storage.initialize()
         key = ("test", "AAPL")
         await storage.write(key, sample_records)
@@ -95,7 +111,9 @@ class TestParquetStorageWriteAndRead:
 
 class TestParquetStorageMetadata:
     @pytest.mark.asyncio
-    async def test_get_stored_range(self, storage: ParquetStorage, sample_records: list[dict]):
+    async def test_get_stored_range(
+        self, storage: ParquetStorage, sample_records: list[dict]
+    ):
         await storage.initialize()
         key = ("historical-price-eod/full", "AAPL")
         await storage.write(key, sample_records)
@@ -115,13 +133,20 @@ class TestParquetStorageMetadata:
 
 class TestParquetStorageAppend:
     @pytest.mark.asyncio
-    async def test_append_new_records(self, storage: ParquetStorage, sample_records: list[dict]):
+    async def test_append_new_records(
+        self, storage: ParquetStorage, sample_records: list[dict]
+    ):
         await storage.initialize()
         key = ("test", "AAPL")
         await storage.write(key, sample_records[:2])
 
         new_records = [
-            {"date": "2024-01-08", "symbol": "AAPL", "close": 185.56, "volume": 59144200},
+            {
+                "date": "2024-01-08",
+                "symbol": "AAPL",
+                "close": 185.56,
+                "volume": 59144200,
+            },
         ]
         await storage.append(key, new_records)
 
@@ -129,7 +154,9 @@ class TestParquetStorageAppend:
         assert len(result) == 3
 
     @pytest.mark.asyncio
-    async def test_append_deduplicates(self, storage: ParquetStorage, sample_records: list[dict]):
+    async def test_append_deduplicates(
+        self, storage: ParquetStorage, sample_records: list[dict]
+    ):
         await storage.initialize()
         key = ("test", "AAPL")
         await storage.write(key, sample_records[:2])
@@ -137,7 +164,12 @@ class TestParquetStorageAppend:
         # Append with one overlapping and one new
         overlap_and_new = [
             sample_records[1],  # duplicate
-            {"date": "2024-01-08", "symbol": "AAPL", "close": 185.56, "volume": 59144200},
+            {
+                "date": "2024-01-08",
+                "symbol": "AAPL",
+                "close": 185.56,
+                "volume": 59144200,
+            },
         ]
         await storage.append(key, overlap_and_new)
 
@@ -185,7 +217,9 @@ class TestParquetStorageListKeys:
         assert len(keys) == 3
 
     @pytest.mark.asyncio
-    async def test_list_keys_with_prefix(self, storage: ParquetStorage, sample_records: list[dict]):
+    async def test_list_keys_with_prefix(
+        self, storage: ParquetStorage, sample_records: list[dict]
+    ):
         await storage.initialize()
         await storage.write(("endpoint-a", "SYM1"), sample_records)
         await storage.write(("endpoint-a", "SYM2"), sample_records)

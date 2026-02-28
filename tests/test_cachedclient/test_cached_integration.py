@@ -39,10 +39,24 @@ def _make_mock_fmp_client():
 
     # All other categories as simple mocks
     for cat in [
-        "search", "directory", "analyst", "calendar", "cot", "dcf",
-        "etf", "commodity", "crypto", "forex", "form13f", "indexes",
-        "insider_trades", "market_performance", "news",
-        "technical_indicators", "quote", "senate",
+        "search",
+        "directory",
+        "analyst",
+        "calendar",
+        "cot",
+        "dcf",
+        "etf",
+        "commodity",
+        "crypto",
+        "forex",
+        "form13f",
+        "indexes",
+        "insider_trades",
+        "market_performance",
+        "news",
+        "technical_indicators",
+        "quote",
+        "senate",
     ]:
         if not hasattr(fmp, cat):
             setattr(fmp, cat, MagicMock())
@@ -86,7 +100,9 @@ class TestDateRangeCaching:
 
         cached = CachedClient(mock_fmp, storage)
         async with cached:
-            result = await cached.chart.historical_price_full("AAPL", "2024-01-02", "2024-01-03")
+            result = await cached.chart.historical_price_full(
+                "AAPL", "2024-01-02", "2024-01-03"
+            )
 
         assert len(result) == 2
         mock_fmp.chart.historical_price_full.assert_called_once()
@@ -112,8 +128,12 @@ class TestDateRangeCaching:
             assert mock_fmp.chart.historical_price_full.call_count == 1
 
             # Second call with same range: cache hit
-            result = await cached.chart.historical_price_full("AAPL", "2024-01-02", "2024-01-03")
-            assert mock_fmp.chart.historical_price_full.call_count == 1  # no additional call
+            result = await cached.chart.historical_price_full(
+                "AAPL", "2024-01-02", "2024-01-03"
+            )
+            assert (
+                mock_fmp.chart.historical_price_full.call_count == 1
+            )  # no additional call
             assert len(result) == 2
 
     @pytest.mark.asyncio
@@ -137,7 +157,9 @@ class TestDateRangeCaching:
             assert mock_fmp.chart.historical_price_full.call_count == 1
 
             # Second call: extends to 2024-01-05, should only fetch gap
-            result = await cached.chart.historical_price_full("AAPL", "2024-01-02", "2024-01-05")
+            result = await cached.chart.historical_price_full(
+                "AAPL", "2024-01-02", "2024-01-05"
+            )
             assert mock_fmp.chart.historical_price_full.call_count == 2
 
             # Verify the gap call used the correct date range
@@ -172,8 +194,16 @@ class TestPeriodBasedCaching:
             {"date": "2023-09-30", "symbol": "AAPL", "revenue": 383285000000},
         ]
         second_fetch = [
-            {"date": "2024-09-28", "symbol": "AAPL", "revenue": 391035000001},  # updated
-            {"date": "2024-03-30", "symbol": "AAPL", "revenue": 95000000000},  # new quarter
+            {
+                "date": "2024-09-28",
+                "symbol": "AAPL",
+                "revenue": 391035000001,
+            },  # updated
+            {
+                "date": "2024-03-30",
+                "symbol": "AAPL",
+                "revenue": 95000000000,
+            },  # new quarter
         ]
 
         mock_fmp.statements.income_statement.side_effect = [first_fetch, second_fetch]
@@ -181,11 +211,15 @@ class TestPeriodBasedCaching:
         cached = CachedClient(mock_fmp, storage)
         async with cached:
             # First call
-            r1 = await cached.statements.income_statement("AAPL", limit=5, period="annual")
+            r1 = await cached.statements.income_statement(
+                "AAPL", limit=5, period="annual"
+            )
             assert len(r1) == 2
 
             # Second call — should merge
-            r2 = await cached.statements.income_statement("AAPL", limit=5, period="annual")
+            r2 = await cached.statements.income_statement(
+                "AAPL", limit=5, period="annual"
+            )
             assert len(r2) == 3  # 2 from first + 1 new (one was an update)
 
             # The updated record should have the new value
@@ -203,7 +237,9 @@ class TestPeriodBasedCaching:
 
         cached = CachedClient(mock_fmp, storage)
         async with cached:
-            result = await cached.statements.income_statement("AAPL", limit=2, period="annual")
+            result = await cached.statements.income_statement(
+                "AAPL", limit=2, period="annual"
+            )
             assert len(result) == 2
 
 
