@@ -13,6 +13,7 @@
 - **Rate Limiting**: Built-in rate limiting and retry logic to respect API limits
 - **AI-Ready**: MCP tools designed specifically for AI assistants with natural language prompts
 - **CachedClient**: Intelligent caching wrapper that stores time-series data locally and only fetches missing date ranges from the API
+- **Harvester**: Scheduled cache warmer that proactively fetches data across symbols and categories, keeping the local cache fresh
 
 ### Key Features
 
@@ -124,6 +125,65 @@ asyncio.run(main())
 
 **Storage is pluggable** — `ParquetStorage` is the built-in default, but you can pass any `StorageBackend` subclass to `CachedClient(fmp, storage=my_storage)`.
 
+### Harvester
+
+The harvester is a cache warmer that proactively calls CachedClient methods across configured symbols and categories. It uses the same gap detection as CachedClient — only missing data is fetched from the API.
+
+**Single harvest cycle:**
+
+```python
+import asyncio
+from aiofmp import FmpClient
+from aiofmp.cachedclient import CachedClient
+from aiofmp.harvester import Harvester, HarvestConfig, SymbolsConfig
+
+async def main():
+    fmp = FmpClient(api_key="your_api_key_here")
+    cached = CachedClient(fmp)
+
+    config = HarvestConfig(
+        categories=["chart", "statements", "economics"],
+        symbols=SymbolsConfig(mode="explicit", symbols=["AAPL", "MSFT", "GOOGL"]),
+        lookback_days=1825,  # 5 years
+    )
+
+    harvester = Harvester(cached, config)
+    async with cached:
+        results = await harvester.run_once()
+        for r in results:
+            print(f"{r.endpoint_name}  {r.entity or '(global)'}  {r.records_fetched} records")
+
+asyncio.run(main())
+```
+
+**Scheduled harvesting (e.g. every hour):**
+
+```python
+config = HarvestConfig(
+    categories=["chart", "statements"],
+    symbols=SymbolsConfig(mode="discover"),  # auto-discover from FMP directory
+)
+
+harvester = Harvester(cached, config)
+async with cached:
+    await harvester.run_scheduled()  # blocks, runs hourly
+```
+
+**Via CLI:**
+
+```bash
+# One-shot harvest for specific symbols
+aiofmp harvest --symbols AAPL,MSFT,GOOGL --categories chart,statements
+
+# Discover all symbols and harvest on a schedule
+aiofmp harvest-serve --discover --interval 3600
+
+# Harvest from a symbols file
+aiofmp harvest --symbols-file symbols.txt --lookback-days 365
+```
+
+Symbol resolution supports three modes: `explicit` (provide a list), `discover` (calls `directory.company_symbols()` to find all available symbols), and `file:<path>` (reads from a text file, one symbol per line).
+
 ### MCP Server Usage
 
 The aiofmp package includes a built-in MCP server that exposes all FMP APIs as AI-friendly tools.
@@ -213,42 +273,32 @@ Add to your Claude Desktop configuration (`claude_desktop_config.json`):
 
 ### CLI Reference
 
-The `aiofmp-mcp-server` command provides a user-friendly interface for running the MCP server:
+The `aiofmp` CLI provides commands for the MCP server and harvester. The `aiofmp-mcp-server` entry point is also available for backward compatibility.
+
+#### MCP Server
 
 ```bash
-# Basic usage
-aiofmp-mcp-server
-
-# Show help
-aiofmp-mcp-server --help
-
-# HTTP transport
-aiofmp-mcp-server --transport http --host 0.0.0.0 --port 8080
-
-# With API key
-aiofmp-mcp-server --api-key your_api_key_here
-
-# Debug logging
-aiofmp-mcp-server --log-level DEBUG
-
-# Include text content alongside structured content
-aiofmp-mcp-server --text-content
-
-# Enable local caching
-aiofmp-mcp-server --cached
-
-# All options
-aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO --api-key your_key --text-content --cached
+aiofmp mcp-server                                # STDIO transport (default)
+aiofmp mcp-server --transport http --port 8080    # HTTP transport
+aiofmp mcp-server --cached                        # With local caching
+aiofmp mcp-server --api-key your_key              # Pass API key directly
 ```
 
-**Command Options:**
-- `--transport`: Transport mode (`stdio` or `http`, default: `stdio`)
-- `--host`: Host for HTTP transport (default: `localhost`)
-- `--port`: Port for HTTP transport (default: `3000`)
-- `--log-level`: Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`, default: `INFO`)
-- `--api-key`: FMP API key (can also be set via `FMP_API_KEY` environment variable)
-- `--text-content`: Include text content alongside structured content in MCP tool responses (default: text content is empty when structured content is present)
-- `--cached`: Enable CachedClient to cache time-series data locally in Parquet files, minimizing API calls (default: off). Cache dir: `~/.aiofmp/cache` (override with `AIOFMP_CACHE_FILE_PATH`)
+**Options:** `--transport` (stdio/http), `--host`, `--port`, `--log-level`, `--api-key`, `--text-content`, `--cached`
+
+#### Harvest
+
+```bash
+aiofmp harvest --symbols AAPL,MSFT                # One-shot harvest
+aiofmp harvest --discover -c chart,statements     # Discover symbols, specific categories
+aiofmp harvest --symbols-file symbols.txt         # Symbols from file
+aiofmp harvest-serve --discover --interval 3600   # Scheduled harvesting
+aiofmp harvest-serve -s AAPL --no-run-on-start    # Skip initial run
+```
+
+**Options:** `--symbols` / `-s`, `--symbols-file`, `--discover`, `--categories` / `-c`, `--lookback-days` (default: 1825), `--statement-limit` (default: 40), `--api-key`, `--cache-dir`, `--log-level`
+
+**harvest-serve additional options:** `--interval` (default: 3600), `--no-run-on-start`
 
 ### Available API Categories
 

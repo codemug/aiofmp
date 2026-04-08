@@ -71,6 +71,7 @@ dev = [
 
 [project.scripts]
 aiofmp-mcp-server = "aiofmp.cli:mcp_server"
+aiofmp = "aiofmp.cli:cli"
 
 [build-system]
 requires = ["hatchling"]
