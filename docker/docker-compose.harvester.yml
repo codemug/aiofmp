@@ -1,0 +1,21 @@
+services:
+  harvester:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: aiofmp-harvester
+    command:
+      - harvest-serve
+      - --discover
+      - --interval
+      - "${HARVEST_INTERVAL:-3600}"
+      - --lookback-days
+      - "${HARVEST_LOOKBACK_DAYS:-1825}"
+      - --log-level
+      - "${HARVEST_LOG_LEVEL:-INFO}"
+    environment:
+      - FMP_API_KEY=${FMP_API_KEY}
+      - AIOFMP_CACHE_FILE_PATH=/data/cache
+    volumes:
+      - ./data/cache:/data/cache
+    restart: unless-stopped
