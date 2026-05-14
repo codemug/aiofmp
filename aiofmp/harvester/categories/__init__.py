@@ -34,4 +34,13 @@ def registered_names() -> list[str]:
 
 
 # Import concrete category modules so their register_category() calls fire.
-from aiofmp.harvester.categories import chart_eod  # noqa: E402, F401
+from aiofmp.harvester.categories import (  # noqa: E402, F401
+    chart_eod,
+    chart_intraday,
+    commodities_eod,
+    commodities_intraday,
+    forex_eod,
+    forex_intraday,
+    indexes_eod,
+    indexes_intraday,
+)
