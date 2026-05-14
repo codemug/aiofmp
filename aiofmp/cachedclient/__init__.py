@@ -20,12 +20,14 @@ Usage::
 """
 
 from .client import CachedClient, CachedClientConfig
+from .snapshot_store import SnapshotStore
 from .storage.base import StorageBackend, StoredRangeMetadata
 from .storage.parquet import ParquetStorage
 
 __all__ = [
     "CachedClient",
     "CachedClientConfig",
+    "SnapshotStore",
     "StorageBackend",
     "StoredRangeMetadata",
     "ParquetStorage",
