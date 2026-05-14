@@ -15,6 +15,7 @@ class TemporalPattern(str, Enum):
 
     DATE_RANGE = "date_range"  # Pattern A: from/to date params
     PERIOD_BASED = "period_based"  # Pattern B: limit/period params
+    PAGE_WALK = "page_walk"  # Harvester-only writes; user reads are passthrough-to-storage
 
 
 @dataclass(frozen=True)
@@ -55,6 +56,11 @@ class CacheableEndpoint:
     # SDK method signature.  Used by the proxy to bind positional args to
     # names without relying on runtime introspection.
     call_params: list[str] = field(default_factory=list)
+
+    # PAGE_WALK fields (only used when pattern == PAGE_WALK)
+    page_param: str = "page"
+    default_page_size: int = 100
+    walk_date_field: str = "date"
 
 
 class EndpointRegistry:
