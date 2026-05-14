@@ -502,4 +502,57 @@ def build_default_registry() -> EndpointRegistry:
             )
         )
 
+    # =========================================================================
+    # Pattern PAGE_WALK: harvester-write, user-read paginated endpoints
+    # =========================================================================
+
+    # --- Analyst estimates (per-symbol walk) ---
+    registry.register(
+        CacheableEndpoint(
+            category="analyst",
+            method="financial_estimates",
+            api_endpoint="analyst-estimates",
+            pattern=TemporalPattern.PAGE_WALK,
+            entity_key_args=["symbol"],
+            extra_key_args=["period"],
+            page_param="page",
+            limit_param="limit",
+            walk_date_field="date",
+            default_page_size=100,
+            call_params=["symbol", "period", "page", "limit"],
+        )
+    )
+
+    # --- Insider trades (global walk; per-symbol shard on write) ---
+    registry.register(
+        CacheableEndpoint(
+            category="insider_trades",
+            method="latest_insider_trades",
+            api_endpoint="insider-trading/latest",
+            pattern=TemporalPattern.PAGE_WALK,
+            entity_key_args=[],
+            page_param="page",
+            limit_param="limit",
+            walk_date_field="filingDate",
+            default_page_size=100,
+            call_params=["page", "limit", "trade_date"],
+        )
+    )
+
+    # --- Form 13F (global walk; per-CIK shard on write) ---
+    registry.register(
+        CacheableEndpoint(
+            category="form13f",
+            method="latest_filings",
+            api_endpoint="institutional-ownership/latest",
+            pattern=TemporalPattern.PAGE_WALK,
+            entity_key_args=[],
+            page_param="page",
+            limit_param="limit",
+            walk_date_field="acceptedDate",
+            default_page_size=100,
+            call_params=["page", "limit", "trade_date"],
+        )
+    )
+
     return registry
