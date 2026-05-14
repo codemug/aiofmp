@@ -307,7 +307,8 @@ CREATE TABLE checkpoints (
 );
 
 CREATE TABLE symbol_catalog (
-  universe TEXT NOT NULL,              -- 'financial_symbols' | 'actively_trading' | 'etf_list'
+  universe TEXT NOT NULL,              -- 'financial_symbols' | 'actively_trading' | 'commodities'
+                                       --   | 'forex_pairs' | 'indexes' | 'etf_list'
   symbol TEXT NOT NULL,
   payload_json TEXT,                   -- whole row from FMP
   discovered_at TEXT NOT NULL,
