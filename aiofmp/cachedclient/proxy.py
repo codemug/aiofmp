@@ -116,6 +116,8 @@ class CachedCategoryProxy:
                 return await self._fetch_period_based(
                     meta, real_method, args, kwargs, bound_args, storage_key
                 )
+            elif meta.pattern == TemporalPattern.PAGE_WALK:
+                return await self._read_page_walk(meta, bound_args, storage_key)
             else:
                 # Unknown pattern: pass through
                 return await real_method(*args, **kwargs)
@@ -244,3 +246,30 @@ class CachedCategoryProxy:
         if original_limit is not None:
             return all_records[:original_limit]
         return all_records
+
+    async def _read_page_walk(
+        self,
+        meta: CacheableEndpoint,
+        bound_args: dict[str, Any],
+        storage_key: tuple[str, ...],
+    ) -> list[dict[str, Any]]:
+        """Read-only path for PAGE_WALK-registered endpoints.
+
+        PAGE_WALK keys are written by the harvester only. User calls return whatever
+        is stored, sorted by ``walk_date_field`` descending, sliced by ``page``/``limit``.
+        """
+        records = await self._storage.read(storage_key)
+        if not records:
+            return []
+        field = meta.walk_date_field
+        records.sort(key=lambda r: str(r.get(field, "")), reverse=True)
+        page = bound_args.get(meta.page_param, 0) or 0
+        if meta.limit_param:
+            limit_val = bound_args.get(meta.limit_param)
+        else:
+            limit_val = bound_args.get("limit")
+        if limit_val is None:
+            limit_val = meta.default_page_size
+        start = page * limit_val
+        end = start + limit_val
+        return records[start:end]
