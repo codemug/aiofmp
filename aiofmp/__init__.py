@@ -9,9 +9,11 @@ from .analyst import AnalystCategory
 from .base import (
     FMPAuthenticationError,
     FMPBaseClient,
+    FMPBudgetError,
     FMPError,
     FMPRateLimitError,
     FMPResponseError,
+    current_harvest_category,
 )
 from .calendar import CalendarCategory
 from .chart import ChartCategory
@@ -41,6 +43,7 @@ __all__ = [
     "FMPAuthenticationError",
     "FMPRateLimitError",
     "FMPResponseError",
+    "FMPBudgetError",
 ]
 
 

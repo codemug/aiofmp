@@ -6,7 +6,9 @@ including session management, rate limiting, and error handling.
 """
 
 import asyncio
+import contextvars
 import logging
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlencode
 
@@ -37,6 +39,17 @@ class FMPResponseError(FMPError):
     """Raised when the API returns an error response"""
 
     pass
+
+
+class FMPBudgetError(FMPError):
+    """Raised when the harvester's monthly hard bandwidth cap is exceeded."""
+
+    pass
+
+
+current_harvest_category: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "current_harvest_category", default=None
+)
 
 
 class FMPBaseClient:
@@ -78,6 +91,9 @@ class FMPBaseClient:
 
         # Rate limiting
         self._request_semaphore = asyncio.Semaphore(max_concurrent_requests)
+
+        # Bandwidth callback
+        self.on_response_size: Callable[[str | None, int], None] | None = None
 
         # Logging
         logger.info(f"FMP client initialized with base URL: {self.base_url}")
@@ -204,14 +220,23 @@ class FMPBaseClient:
         """
         if response.status == 200:
             try:
-                data = await response.json()
+                raw = await response.read()
+                byte_count = len(raw)
+                cb = self.on_response_size
+                if cb is not None:
+                    try:
+                        cb(current_harvest_category.get(), byte_count)
+                    except Exception:
+                        logger.exception("on_response_size callback raised; ignoring")
 
-                # Check if response contains error information
+                import json  # local import keeps top of file unchanged
+                data = json.loads(raw) if raw else None
+
                 if isinstance(data, dict) and "Error Message" in data:
                     raise FMPResponseError(f"API Error: {data['Error Message']}")
-
                 return data
-
+            except FMPError:
+                raise
             except Exception as e:
                 raise FMPError(f"Failed to parse response: {e}") from e
 
