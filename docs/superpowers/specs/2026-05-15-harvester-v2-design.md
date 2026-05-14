@@ -70,12 +70,19 @@ aiofmp/harvester/
     technical_indicators.py
     news.py
     economics.py
+    commodities_eod.py
+    commodities_intraday.py
+    forex_eod.py
+    forex_intraday.py
+    indexes_eod.py
+    indexes_intraday.py
+    dcf.py
 ```
 
 **Touched code outside `harvester/`:**
 
 - `aiofmp/cli.py` — wire `aiofmp harvest` and `aiofmp harvest-status` subcommands.
-- `aiofmp/cachedclient/registry.py` — add `TemporalPattern.PAGE_WALK`, supporting fields on `CacheableEndpoint`, and register the new endpoints (analyst estimates, insider trades, form 13F).
+- `aiofmp/cachedclient/registry.py` — add `TemporalPattern.PAGE_WALK`, supporting fields on `CacheableEndpoint`, and register the new endpoints (analyst estimates, insider trades, form 13F). Also register the historical-price-eod and historical-chart endpoints under the `commodity`, `forex`, and `indexes` categories so user-driven calls to those category methods hit the same cache as the existing `chart.*` registrations (storage key is keyed off `api_endpoint`, so all four categories share parquet location).
 - `aiofmp/cachedclient/proxy.py` — read-only handling for `PAGE_WALK` keys when called from user code (no implicit writes).
 - `aiofmp/base.py` — emit response-size estimate to a callback so `BudgetTracker` can attribute bytes per category; add `FMPBudgetError` exception raised when the monthly hard cap is exceeded.
 
@@ -83,12 +90,15 @@ No changes to existing parquet layout or `StorageBackend` interface.
 
 ## 3. Symbol catalog
 
-Three "universes" are sourced from FMP's directory endpoints. Each universe is discovered lazily on first use, cached in `symbol_catalog` (SQLite), and refreshed when older than `discovery.refresh_interval` (default 7 days).
+Six "universes" are sourced from FMP's directory and per-category list endpoints. Each universe is discovered lazily on first use, cached in `symbol_catalog` (SQLite), and refreshed when older than `discovery.refresh_interval` (default 7 days).
 
 | Universe | FMP endpoint | Used by |
 | --- | --- | --- |
-| `financial_symbols` | `directory.financial_symbols()` | statements |
+| `financial_symbols` | `directory.financial_symbols()` | statements, dcf |
 | `actively_trading` | `directory.actively_trading()` | analyst_estimates, analyst_snapshots, chart_eod, chart_intraday, technical_indicators, insider_trades sharding |
+| `commodities` | `commodity.commodities_list()` | commodities_eod, commodities_intraday |
+| `forex_pairs` | `forex.forex_list()` | forex_eod, forex_intraday |
+| `indexes` | `indexes.index_list()` | indexes_eod, indexes_intraday |
 | `etf_list` | `directory.etf_list()` | (no category harvests ETFs yet; kept for future) |
 
 `SymbolCatalog.symbols(universe: str) -> list[str]` returns the cached list and triggers a refresh if expired. Directory endpoints themselves are passthrough in `CachedClient` today — `symbol_catalog` is their de facto cache.
@@ -116,6 +126,13 @@ Three "universes" are sourced from FMP's directory endpoints. Each universe is d
 | **insider_trades** | P2 (global walk, per-symbol shard on write) | `insider_trades.latest_insider_trades(page=N, limit=page_size)` until oldest `filingDate < last_run` or page index ≥ `max_pages`. | New `PAGE_WALK` entry. Records sharded by `symbol` into key `("insider-trading/latest", symbol)`. A second key `("insider-trading/latest", "_global")` holds the raw global stream for completeness. | 6h |
 | **form13f** | P2 (global walk, per-CIK shard on write) | `form13f.latest_filings(page=N, limit=page_size)` until oldest `acceptedDate < last_run` or page index ≥ `max_pages`. | New `PAGE_WALK` entry. Records sharded by `cik` into key `("institutional-ownership/latest", cik)`. Per-CIK detail extracts (`filings_extract`) are NOT harvested in v1 — fetched on-demand by users. | 24h |
 | **economics** | P3 | `cached.economics.treasury_rates(today - backfill_years, today)` plus per-indicator `cached.economics.economic_indicators(name, today - backfill_years, today)`. Indicators come from config (default: `GDP`, `CPI`, `UNRATE`, `FEDFUNDS`, `DFF`). | `CachedClient` `DATE_RANGE` (existing) | 24h |
+| **commodities_eod** | P3 | For each symbol in `commodities` universe (~50 symbols), `cached.commodity.historical_price_full(symbol, today - backfill_years, today)`. Variants list also supports `historical_price_light`. | `CachedClient` `DATE_RANGE` (new registration under `commodity` category, shared parquet with `chart.historical_price_full`) | 24h |
+| **commodities_intraday** *(off by default)* | P3 | Per `(symbol, timeframe)` for symbols in `commodities` universe: `cached.commodity.intraday_<tf>(symbol, today - backfill_days, today)`. | `CachedClient` `DATE_RANGE` (new registration under `commodity` category) | 4h |
+| **forex_eod** | P3 | For each symbol in `forex_pairs` universe (~200–300 pairs), `cached.forex.historical_price_full(symbol, today - backfill_years, today)`. Variants list also supports `historical_price_light`. | `CachedClient` `DATE_RANGE` (new registration under `forex` category) | 24h |
+| **forex_intraday** *(off by default)* | P3 | Per `(symbol, timeframe)` for symbols in `forex_pairs` universe: `cached.forex.intraday_<tf>(symbol, today - backfill_days, today)`. | `CachedClient` `DATE_RANGE` (new registration under `forex` category) | 4h |
+| **indexes_eod** | P3 | For each symbol in `indexes` universe (~100–200), `cached.indexes.historical_price_eod_full(symbol, today - backfill_years, today)`. Variants list also supports `historical_price_eod_light`. | `CachedClient` `DATE_RANGE` (new registration under `indexes` category, `DATE_OBJ` date type) | 24h |
+| **indexes_intraday** *(off by default)* | P3 | Per `(symbol, timeframe)` for symbols in `indexes` universe: `cached.indexes.intraday_<tf>(symbol, today - backfill_days, today)`. | `CachedClient` `DATE_RANGE` (new registration under `indexes` category, `DATE_OBJ`) | 4h |
+| **dcf** | P4 | Per symbol in `financial_symbols`: `dcf.dcf_valuation(symbol)` and `dcf.levered_dcf(symbol)`. Both return one-row point-in-time snapshots that change only when underlying statements change. `custom_dcf_*` is NOT harvested (user-parameterized). | Snapshot store: key `("snapshot/<api-endpoint>", symbol)` → single-row parquet, overwritten each cycle. | 24h |
 
 ### New CachedClient surface area
 
@@ -219,6 +236,47 @@ categories:
     interval: 24h
     indicators: [GDP, CPI, UNRATE, FEDFUNDS, DFF]
     backfill_years: 10
+
+  commodities_eod:
+    enabled: true
+    interval: 24h
+    variants: [historical_price_full]
+    backfill_years: 10
+
+  commodities_intraday:
+    enabled: false
+    interval: 4h
+    timeframes: [1hour]
+    backfill_days: 30
+
+  forex_eod:
+    enabled: true
+    interval: 24h
+    variants: [historical_price_full]
+    backfill_years: 10
+
+  forex_intraday:
+    enabled: false
+    interval: 4h
+    timeframes: [1hour]
+    backfill_days: 30
+
+  indexes_eod:
+    enabled: true
+    interval: 24h
+    variants: [historical_price_eod_full]
+    backfill_years: 10
+
+  indexes_intraday:
+    enabled: false
+    interval: 4h
+    timeframes: [1hour]
+    backfill_days: 30
+
+  dcf:
+    enabled: true
+    interval: 24h
+    include: [dcf_valuation, levered_dcf]
 ```
 
 **Interval parsing.** `Ns`, `Nm`, `Nh`, `Nd` (case-insensitive). Validation rejects anything else.
