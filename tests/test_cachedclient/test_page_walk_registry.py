@@ -120,3 +120,35 @@ class TestPageWalkProxyReadOnly:
         proxy = CachedCategoryProxy(real_category, "analyst", storage, reg)
         records = await proxy.financial_estimates(symbol="MSFT", period="annual")
         assert records == []
+
+
+class TestPageWalkEndpointRegistrations:
+    def test_analyst_financial_estimates_registered(self) -> None:
+        reg = build_default_registry()
+        ep = reg.get("analyst", "financial_estimates")
+        assert ep is not None
+        assert ep.pattern == TemporalPattern.PAGE_WALK
+        assert ep.api_endpoint == "analyst-estimates"
+        assert ep.entity_key_args == ["symbol"]
+        assert ep.extra_key_args == ["period"]
+        assert ep.page_param == "page"
+        assert ep.limit_param == "limit"
+        assert ep.walk_date_field == "date"
+
+    def test_insider_trades_latest_registered(self) -> None:
+        reg = build_default_registry()
+        ep = reg.get("insider_trades", "latest_insider_trades")
+        assert ep is not None
+        assert ep.pattern == TemporalPattern.PAGE_WALK
+        assert ep.api_endpoint == "insider-trading/latest"
+        assert ep.entity_key_args == []
+        assert ep.page_param == "page"
+        assert ep.walk_date_field == "filingDate"
+
+    def test_form13f_latest_filings_registered(self) -> None:
+        reg = build_default_registry()
+        ep = reg.get("form13f", "latest_filings")
+        assert ep is not None
+        assert ep.pattern == TemporalPattern.PAGE_WALK
+        assert ep.api_endpoint == "institutional-ownership/latest"
+        assert ep.walk_date_field == "acceptedDate"
