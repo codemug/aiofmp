@@ -66,3 +66,86 @@ class TestHarvestConfig:
     def test_budget_defaults(self) -> None:
         b = BudgetConfig()
         assert b.soft_cap_behavior == "pause_until_next_month"
+
+
+from textwrap import dedent
+
+from aiofmp.harvester.config import load_config_from_yaml
+
+
+class TestLoadConfigFromYaml:
+    def test_minimal(self, tmp_path) -> None:
+        path = tmp_path / "h.yaml"
+        path.write_text("state_dir: /tmp/x\n")
+        cfg = load_config_from_yaml(path)
+        assert cfg.state_dir == "/tmp/x"
+        assert cfg.log_level == "INFO"
+        assert cfg.budget.monthly_soft_cap_gb == 18
+
+    def test_full(self, tmp_path) -> None:
+        path = tmp_path / "h.yaml"
+        path.write_text(dedent("""
+            state_dir: /var/aiofmp
+            log_level: DEBUG
+            budget:
+              monthly_soft_cap_gb: 10
+              monthly_hard_cap_gb: 12
+              soft_cap_behavior: warn_only
+            retry:
+              on_429:
+                backoff_seconds: [30, 60]
+                max_attempts: 2
+              on_5xx:
+                backoff_seconds: [5]
+                max_attempts: 1
+            discovery:
+              refresh_interval: 3d
+            categories:
+              statements:
+                enabled: true
+                interval: 6h
+                periods: [annual, quarter]
+                initial_limit: 40
+              chart_eod:
+                enabled: false
+                interval: 24h
+        """).strip() + "\n")
+        cfg = load_config_from_yaml(path)
+        assert cfg.state_dir == "/var/aiofmp"
+        assert cfg.log_level == "DEBUG"
+        assert cfg.budget.monthly_soft_cap_gb == 10
+        assert cfg.budget.soft_cap_behavior == "warn_only"
+        assert cfg.retry.on_429.backoff_seconds == [30, 60]
+        assert cfg.retry.on_429.max_attempts == 2
+        assert cfg.discovery.refresh_interval == "3d"
+        assert "statements" in cfg.categories
+        st = cfg.categories["statements"]
+        assert st.enabled is True
+        assert st.interval == "6h"
+        assert st.extra["periods"] == ["annual", "quarter"]
+        assert st.extra["initial_limit"] == 40
+        assert cfg.categories["chart_eod"].enabled is False
+
+    def test_missing_file(self, tmp_path) -> None:
+        import pytest
+        with pytest.raises(FileNotFoundError):
+            load_config_from_yaml(tmp_path / "nope.yaml")
+
+    def test_bad_yaml(self, tmp_path) -> None:
+        import pytest
+        path = tmp_path / "bad.yaml"
+        path.write_text("state_dir: [unclosed\n")
+        with pytest.raises(ValueError, match="yaml"):
+            load_config_from_yaml(path)
+
+    def test_category_missing_required(self, tmp_path) -> None:
+        import pytest
+        path = tmp_path / "h.yaml"
+        path.write_text(dedent("""
+            categories:
+              statements:
+                enabled: true
+                # interval missing
+        """).strip() + "\n")
+        with pytest.raises(ValueError, match="interval"):
+            load_config_from_yaml(path)
