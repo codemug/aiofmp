@@ -42,6 +42,9 @@ class HarvesterManager:
 
     async def start(self) -> None:
         """Construct enabled category harvesters. Does not start tasks."""
+        # Wire bandwidth + hard-cap callback into the shared FmpClient
+        self.fmp_client.on_response_size = self._on_response_size
+
         for name, cat_cfg in self.config.categories.items():
             if not cat_cfg.enabled:
                 logger.info("Category %s is disabled; skipping", name)
@@ -50,6 +53,15 @@ class HarvesterManager:
                 self._categories[name] = self._build_category(name, cat_cfg)
             except KeyError:
                 logger.warning("Unknown category in config: %s (skipping)", name)
+
+    def _on_response_size(self, category: str | None, byte_count: int) -> None:
+        """Bandwidth callback installed on FmpClient.
+
+        Records bytes against the current category (or 'user' if outside a cycle),
+        then raises FMPBudgetError if the hard cap is breached for harvester traffic.
+        """
+        self.budget.record_bytes(category, byte_count)
+        self.budget.check_hard_cap(category)
 
     def _build_category(self, name: str, cat_cfg: CategoryConfig) -> CategoryHarvester:
         from aiofmp.harvester.categories import build_category

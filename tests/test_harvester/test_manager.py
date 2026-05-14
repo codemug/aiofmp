@@ -116,3 +116,40 @@ class TestHarvesterManager:
         await mgr.start()
         assert "nonexistent" not in mgr._categories
         await mgr.close()
+
+
+class TestBandwidthAttachment:
+    @pytest.mark.asyncio
+    async def test_callback_attached_to_fmp_client(self, cfg: HarvestConfig) -> None:
+        from aiofmp.base import FMPBaseClient, current_harvest_category
+        fmp = FMPBaseClient(api_key="dummy")
+        mgr = HarvesterManager(cfg, fmp_client=fmp, cached_client=MagicMock())
+        await mgr.start()
+        assert fmp.on_response_size is not None
+        # Invoke it and verify it lands in the ledger.
+        token = current_harvest_category.set("alpha")
+        try:
+            fmp.on_response_size(current_harvest_category.get(), 4096)
+        finally:
+            current_harvest_category.reset(token)
+        month = mgr.budget.current_month_key()
+        assert mgr.state.get_category_month_bytes(month, "alpha") == 4096
+        await mgr.close()
+
+    @pytest.mark.asyncio
+    async def test_callback_triggers_hard_cap(self, cfg: HarvestConfig) -> None:
+        from aiofmp.base import FMPBaseClient, FMPBudgetError, current_harvest_category
+        cfg.budget.monthly_soft_cap_gb = 1
+        cfg.budget.monthly_hard_cap_gb = 2
+        fmp = FMPBaseClient(api_key="dummy")
+        mgr = HarvesterManager(cfg, fmp_client=fmp, cached_client=MagicMock())
+        await mgr.start()
+        # Pre-fill the ledger to past hard cap
+        mgr.budget.record_bytes("alpha", 3 * 1024 ** 3)
+        token = current_harvest_category.set("alpha")
+        try:
+            with pytest.raises(FMPBudgetError):
+                fmp.on_response_size(current_harvest_category.get(), 1)
+        finally:
+            current_harvest_category.reset(token)
+        await mgr.close()
