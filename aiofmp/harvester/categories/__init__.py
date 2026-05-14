@@ -45,5 +45,6 @@ from aiofmp.harvester.categories import (  # noqa: E402, F401
     indexes_eod,
     indexes_intraday,
     news,
+    statements,
     technical_indicators,
 )
