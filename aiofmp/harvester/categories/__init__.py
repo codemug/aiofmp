@@ -43,6 +43,7 @@ from aiofmp.harvester.categories import (  # noqa: E402, F401
     economics,
     forex_eod,
     forex_intraday,
+    form13f,
     indexes_eod,
     indexes_intraday,
     insider_trades,
