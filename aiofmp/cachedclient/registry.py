@@ -393,4 +393,113 @@ def build_default_registry() -> EndpointRegistry:
             )
         )
 
+    # =========================================================================
+    # Multi-category sharing: commodity / forex / indexes use the same FMP
+    # wire endpoints as chart.* but expose their own SDK methods. Register
+    # the same metadata under those categories so user-driven calls hit the
+    # same cache. Storage keys start with api_endpoint, so they share parquet.
+    # =========================================================================
+
+    # --- Commodity (str dates) ---
+    for method, endpoint in [
+        ("historical_price_light", "historical-price-eod/light"),
+        ("historical_price_full", "historical-price-eod/full"),
+    ]:
+        registry.register(
+            CacheableEndpoint(
+                category="commodity",
+                method=method,
+                api_endpoint=endpoint,
+                pattern=TemporalPattern.DATE_RANGE,
+                entity_key_args=["symbol"],
+                date_param_type=DateParamType.STRING,
+                call_params=["symbol", "from_date", "to_date"],
+            )
+        )
+    for method, endpoint in [
+        ("intraday_1min", "historical-chart/1min"),
+        ("intraday_5min", "historical-chart/5min"),
+        ("intraday_1hour", "historical-chart/1hour"),
+    ]:
+        registry.register(
+            CacheableEndpoint(
+                category="commodity",
+                method=method,
+                api_endpoint=endpoint,
+                pattern=TemporalPattern.DATE_RANGE,
+                entity_key_args=["symbol"],
+                response_date_format="%Y-%m-%d %H:%M:%S",
+                date_param_type=DateParamType.STRING,
+                call_params=["symbol", "from_date", "to_date"],
+            )
+        )
+
+    # --- Forex (str dates) ---
+    for method, endpoint in [
+        ("historical_price_light", "historical-price-eod/light"),
+        ("historical_price_full", "historical-price-eod/full"),
+    ]:
+        registry.register(
+            CacheableEndpoint(
+                category="forex",
+                method=method,
+                api_endpoint=endpoint,
+                pattern=TemporalPattern.DATE_RANGE,
+                entity_key_args=["symbol"],
+                date_param_type=DateParamType.STRING,
+                call_params=["symbol", "from_date", "to_date"],
+            )
+        )
+    for method, endpoint in [
+        ("intraday_1min", "historical-chart/1min"),
+        ("intraday_5min", "historical-chart/5min"),
+        ("intraday_1hour", "historical-chart/1hour"),
+    ]:
+        registry.register(
+            CacheableEndpoint(
+                category="forex",
+                method=method,
+                api_endpoint=endpoint,
+                pattern=TemporalPattern.DATE_RANGE,
+                entity_key_args=["symbol"],
+                response_date_format="%Y-%m-%d %H:%M:%S",
+                date_param_type=DateParamType.STRING,
+                call_params=["symbol", "from_date", "to_date"],
+            )
+        )
+
+    # --- Indexes (date objects) ---
+    for method, endpoint in [
+        ("historical_price_eod_light", "historical-price-eod/light"),
+        ("historical_price_eod_full", "historical-price-eod/full"),
+    ]:
+        registry.register(
+            CacheableEndpoint(
+                category="indexes",
+                method=method,
+                api_endpoint=endpoint,
+                pattern=TemporalPattern.DATE_RANGE,
+                entity_key_args=["symbol"],
+                date_param_type=DateParamType.DATE_OBJ,
+                call_params=["symbol", "from_date", "to_date"],
+            )
+        )
+    for method, endpoint in [
+        ("intraday_1min", "historical-chart/1min"),
+        ("intraday_5min", "historical-chart/5min"),
+        ("intraday_1hour", "historical-chart/1hour"),
+    ]:
+        registry.register(
+            CacheableEndpoint(
+                category="indexes",
+                method=method,
+                api_endpoint=endpoint,
+                pattern=TemporalPattern.DATE_RANGE,
+                entity_key_args=["symbol"],
+                response_date_format="%Y-%m-%d %H:%M:%S",
+                date_param_type=DateParamType.DATE_OBJ,
+                call_params=["symbol", "from_date", "to_date"],
+            )
+        )
+
     return registry
