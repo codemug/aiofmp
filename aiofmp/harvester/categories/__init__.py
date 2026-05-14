@@ -41,6 +41,7 @@ from aiofmp.harvester.categories import (  # noqa: E402, F401
     chart_intraday,
     commodities_eod,
     commodities_intraday,
+    dcf,
     economics,
     forex_eod,
     forex_intraday,
