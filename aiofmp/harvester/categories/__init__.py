@@ -31,3 +31,7 @@ def build_category(name: str, cfg: "CategoryConfig", manager: "HarvesterManager"
 
 def registered_names() -> list[str]:
     return sorted(_REGISTRY.keys())
+
+
+# Import concrete category modules so their register_category() calls fire.
+from aiofmp.harvester.categories import chart_eod  # noqa: E402, F401
