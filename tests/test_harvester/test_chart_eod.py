@@ -28,7 +28,9 @@ def manager(tmp_path: Path) -> MagicMock:
     m.catalog.symbols = AsyncMock(return_value=["AAPL"])
     m.cached_client = MagicMock()
     m.cached_client.chart = MagicMock()
-    m.cached_client.chart.historical_price_full = AsyncMock(return_value=[{"date": "2025-01-15"}])
+    m.cached_client.chart.historical_price_full = AsyncMock(
+        return_value=[{"date": "2025-01-15"}]
+    )
     m.cached_client.chart.historical_price_light = AsyncMock(return_value=[])
     return m
 
@@ -69,4 +71,5 @@ class TestChartEod:
     @pytest.mark.asyncio
     async def test_registers_at_import(self) -> None:
         from aiofmp.harvester.categories import _REGISTRY
+
         assert "chart_eod" in _REGISTRY

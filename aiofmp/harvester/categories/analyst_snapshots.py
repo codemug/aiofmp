@@ -29,8 +29,14 @@ _DEFAULT_INCLUDE = list(_INCLUDE_MAP.keys())
 
 
 class AnalystSnapshotsHarvester(CategoryHarvester):
-    def __init__(self, cfg: CategoryConfig, manager: "HarvesterManager") -> None:
-        super().__init__("analyst_snapshots", cfg, manager.state, manager.budget, manager.config.retry)
+    def __init__(self, cfg: CategoryConfig, manager: HarvesterManager) -> None:
+        super().__init__(
+            "analyst_snapshots",
+            cfg,
+            manager.state,
+            manager.budget,
+            manager.config.retry,
+        )
         self._catalog = manager.catalog
         self._fmp = manager.fmp_client
         self._snapshots = SnapshotStore(manager.cached_client.storage)
@@ -57,13 +63,20 @@ class AnalystSnapshotsHarvester(CategoryHarvester):
                     succeeded += 1
                 except Exception as exc:
                     logger.warning(
-                        "analyst_snapshots.%s(%s) failed: %s", method_name, symbol, exc,
+                        "analyst_snapshots.%s(%s) failed: %s",
+                        method_name,
+                        symbol,
+                        exc,
                     )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
-        return RunOutcome(status=status, items_attempted=attempted, items_succeeded=succeeded)
+        return RunOutcome(
+            status=status, items_attempted=attempted, items_succeeded=succeeded
+        )
 
 
-def build_analyst_snapshots(cfg: CategoryConfig, manager: "HarvesterManager") -> AnalystSnapshotsHarvester:
+def build_analyst_snapshots(
+    cfg: CategoryConfig, manager: HarvesterManager
+) -> AnalystSnapshotsHarvester:
     return AnalystSnapshotsHarvester(cfg, manager)
 
 

@@ -29,7 +29,9 @@ _UNIVERSE_SPECS: dict[str, tuple[str, str]] = {
 
 
 class SymbolCatalog:
-    def __init__(self, store: StateStore, fmp_client: Any, refresh_interval_seconds: int) -> None:
+    def __init__(
+        self, store: StateStore, fmp_client: Any, refresh_interval_seconds: int
+    ) -> None:
         self._store = store
         self._fmp = fmp_client
         self._refresh_seconds = refresh_interval_seconds
@@ -59,10 +61,16 @@ class SymbolCatalog:
         cat_attr, method_name = _UNIVERSE_SPECS[universe]
         category = getattr(self._fmp, cat_attr)
         method = getattr(category, method_name)
-        logger.info("Refreshing symbol universe %s via %s.%s", universe, cat_attr, method_name)
+        logger.info(
+            "Refreshing symbol universe %s via %s.%s", universe, cat_attr, method_name
+        )
         records = await method()
         if not isinstance(records, list):
-            logger.warning("Universe %s returned non-list (%s); keeping prior cache", universe, type(records).__name__)
+            logger.warning(
+                "Universe %s returned non-list (%s); keeping prior cache",
+                universe,
+                type(records).__name__,
+            )
             return
         rows: list[tuple[str, dict[str, Any]]] = []
         for r in records:

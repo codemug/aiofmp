@@ -134,8 +134,8 @@ def mcp_server(
         sys.exit(1)
 
 
-from aiofmp.harvester.cli import harvest as _harvest_cmd
-from aiofmp.harvester.cli import harvest_status as _harvest_status_cmd
+from aiofmp.harvester.cli import harvest as _harvest_cmd  # noqa: E402
+from aiofmp.harvester.cli import harvest_status as _harvest_status_cmd  # noqa: E402
 
 cli.add_command(_harvest_cmd)
 cli.add_command(_harvest_status_cmd)

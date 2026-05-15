@@ -30,8 +30,10 @@ def _parse_iso(d: str | None) -> date | None:
 
 
 class InsiderTradesHarvester(CategoryHarvester):
-    def __init__(self, cfg: CategoryConfig, manager: "HarvesterManager") -> None:
-        super().__init__("insider_trades", cfg, manager.state, manager.budget, manager.config.retry)
+    def __init__(self, cfg: CategoryConfig, manager: HarvesterManager) -> None:
+        super().__init__(
+            "insider_trades", cfg, manager.state, manager.budget, manager.config.retry
+        )
         self._fmp = manager.fmp_client
         self._storage = manager.cached_client.storage
         self._max_pages = int(cfg.extra.get("max_pages", 200))
@@ -43,7 +45,9 @@ class InsiderTradesHarvester(CategoryHarvester):
         newest_seen: date | None = None
 
         for page in range(self._max_pages):
-            records = await self._fmp.insider_trades.latest_insider_trades(page=page, limit=self._page_size)
+            records = await self._fmp.insider_trades.latest_insider_trades(
+                page=page, limit=self._page_size
+            )
             if not records:
                 break
             all_records.extend(records)
@@ -61,7 +65,9 @@ class InsiderTradesHarvester(CategoryHarvester):
             await self._persist(all_records)
 
         if newest_seen is not None:
-            self.state.set_checkpoint("insider_trades", "global", newest_seen.isoformat())
+            self.state.set_checkpoint(
+                "insider_trades", "global", newest_seen.isoformat()
+            )
 
         return RunOutcome(
             status=RunStatus.OK,
@@ -73,7 +79,10 @@ class InsiderTradesHarvester(CategoryHarvester):
         # Global stream
         global_key = (_STORAGE_PREFIX, "_global")
         existing_global = await self._storage.read(global_key)
-        seen_global = {(r.get("symbol"), r.get("filingDate"), r.get("transactionType")) for r in existing_global}
+        seen_global = {
+            (r.get("symbol"), r.get("filingDate"), r.get("transactionType"))
+            for r in existing_global
+        }
         for r in records:
             tup = (r.get("symbol"), r.get("filingDate"), r.get("transactionType"))
             if tup not in seen_global:
@@ -101,7 +110,9 @@ class InsiderTradesHarvester(CategoryHarvester):
             await self._storage.write(key, existing, date_field="filingDate")
 
 
-def build_insider_trades(cfg: CategoryConfig, manager: "HarvesterManager") -> InsiderTradesHarvester:
+def build_insider_trades(
+    cfg: CategoryConfig, manager: HarvesterManager
+) -> InsiderTradesHarvester:
     return InsiderTradesHarvester(cfg, manager)
 
 

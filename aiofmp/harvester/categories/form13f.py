@@ -30,8 +30,10 @@ def _parse_iso(d: str | None) -> date | None:
 
 
 class Form13FHarvester(CategoryHarvester):
-    def __init__(self, cfg: CategoryConfig, manager: "HarvesterManager") -> None:
-        super().__init__("form13f", cfg, manager.state, manager.budget, manager.config.retry)
+    def __init__(self, cfg: CategoryConfig, manager: HarvesterManager) -> None:
+        super().__init__(
+            "form13f", cfg, manager.state, manager.budget, manager.config.retry
+        )
         self._fmp = manager.fmp_client
         self._storage = manager.cached_client.storage
         self._max_pages = int(cfg.extra.get("max_pages", 50))
@@ -43,7 +45,9 @@ class Form13FHarvester(CategoryHarvester):
         newest_seen: date | None = None
 
         for page in range(self._max_pages):
-            records = await self._fmp.form13f.latest_filings(page=page, limit=self._page_size)
+            records = await self._fmp.form13f.latest_filings(
+                page=page, limit=self._page_size
+            )
             if not records:
                 break
             all_records.extend(records)
@@ -79,7 +83,9 @@ class Form13FHarvester(CategoryHarvester):
                 existing_global.append(r)
                 seen_global.add(tup)
         existing_global.sort(key=lambda r: str(r.get("acceptedDate", "")), reverse=True)
-        await self._storage.write(global_key, existing_global, date_field="acceptedDate")
+        await self._storage.write(
+            global_key, existing_global, date_field="acceptedDate"
+        )
 
         by_cik: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for r in records:
@@ -98,7 +104,7 @@ class Form13FHarvester(CategoryHarvester):
             await self._storage.write(key, existing, date_field="acceptedDate")
 
 
-def build_form13f(cfg: CategoryConfig, manager: "HarvesterManager") -> Form13FHarvester:
+def build_form13f(cfg: CategoryConfig, manager: HarvesterManager) -> Form13FHarvester:
     return Form13FHarvester(cfg, manager)
 
 

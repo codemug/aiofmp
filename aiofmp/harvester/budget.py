@@ -20,7 +20,7 @@ from aiofmp.harvester.state import StateStore
 
 logger = logging.getLogger(__name__)
 
-GB = 1024 ** 3
+GB = 1024**3
 
 
 class BudgetTracker:

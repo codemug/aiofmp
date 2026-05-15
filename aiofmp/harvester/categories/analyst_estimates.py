@@ -30,8 +30,14 @@ def _parse_iso(d: str | None) -> date | None:
 
 
 class AnalystEstimatesHarvester(CategoryHarvester):
-    def __init__(self, cfg: CategoryConfig, manager: "HarvesterManager") -> None:
-        super().__init__("analyst_estimates", cfg, manager.state, manager.budget, manager.config.retry)
+    def __init__(self, cfg: CategoryConfig, manager: HarvesterManager) -> None:
+        super().__init__(
+            "analyst_estimates",
+            cfg,
+            manager.state,
+            manager.budget,
+            manager.config.retry,
+        )
         self._catalog = manager.catalog
         self._fmp = manager.fmp_client
         self._storage = manager.cached_client.storage
@@ -51,16 +57,23 @@ class AnalystEstimatesHarvester(CategoryHarvester):
                     succeeded += 1
                 except Exception as exc:
                     logger.warning(
-                        "analyst_estimates walk failed for %s/%s: %s", symbol, period, exc,
+                        "analyst_estimates walk failed for %s/%s: %s",
+                        symbol,
+                        period,
+                        exc,
                     )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
-        return RunOutcome(status=status, items_attempted=attempted, items_succeeded=succeeded)
+        return RunOutcome(
+            status=status, items_attempted=attempted, items_succeeded=succeeded
+        )
 
     async def _walk_symbol(self, symbol: str, period: str) -> None:
         scope = f"{symbol}/{period}"
         last_ckpt = _parse_iso(self.state.get_checkpoint("analyst_estimates", scope))
         max_backfill = date.today() - timedelta(days=self._max_backfill_days)
-        stop_at: date = last_ckpt if last_ckpt and last_ckpt > max_backfill else max_backfill
+        stop_at: date = (
+            last_ckpt if last_ckpt and last_ckpt > max_backfill else max_backfill
+        )
 
         storage_key = (_STORAGE_PREFIX, symbol, period)
         all_records: list[dict[str, Any]] = []
@@ -97,10 +110,14 @@ class AnalystEstimatesHarvester(CategoryHarvester):
             await self._storage.write(storage_key, existing, date_field="date")
 
         if newest_seen is not None:
-            self.state.set_checkpoint("analyst_estimates", scope, newest_seen.isoformat())
+            self.state.set_checkpoint(
+                "analyst_estimates", scope, newest_seen.isoformat()
+            )
 
 
-def build_analyst_estimates(cfg: CategoryConfig, manager: "HarvesterManager") -> AnalystEstimatesHarvester:
+def build_analyst_estimates(
+    cfg: CategoryConfig, manager: HarvesterManager
+) -> AnalystEstimatesHarvester:
     return AnalystEstimatesHarvester(cfg, manager)
 
 

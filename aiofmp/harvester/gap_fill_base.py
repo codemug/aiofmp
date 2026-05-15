@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
@@ -20,9 +19,9 @@ logger = logging.getLogger(__name__)
 class GapFillTarget:
     """One (category_attr, method_name) pair to call per symbol."""
 
-    category_attr: str        # e.g. "chart", "commodity", "forex", "indexes"
-    method_name: str          # e.g. "historical_price_full"
-    use_date_obj: bool        # True for indexes.*, False elsewhere
+    category_attr: str  # e.g. "chart", "commodity", "forex", "indexes"
+    method_name: str  # e.g. "historical_price_full"
+    use_date_obj: bool  # True for indexes.*, False elsewhere
 
 
 class GapFillHarvester(CategoryHarvester):
@@ -70,11 +69,17 @@ class GapFillHarvester(CategoryHarvester):
                 except Exception as exc:
                     logger.warning(
                         "%s: %s.%s(%s) failed: %s",
-                        self.name, target.category_attr, target.method_name, symbol, exc,
+                        self.name,
+                        target.category_attr,
+                        target.method_name,
+                        symbol,
+                        exc,
                     )
 
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
-        return RunOutcome(status=status, items_attempted=attempted, items_succeeded=succeeded)
+        return RunOutcome(
+            status=status, items_attempted=attempted, items_succeeded=succeeded
+        )
 
     async def _call_target(
         self,

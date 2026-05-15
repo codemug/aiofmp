@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
@@ -42,21 +42,27 @@ PERIOD_ONLY_ENDPOINTS: list[str] = [
 
 
 class StatementsHarvester(CategoryHarvester):
-    def __init__(self, cfg: CategoryConfig, manager: "HarvesterManager") -> None:
-        super().__init__("statements", cfg, manager.state, manager.budget, manager.config.retry)
+    def __init__(self, cfg: CategoryConfig, manager: HarvesterManager) -> None:
+        super().__init__(
+            "statements", cfg, manager.state, manager.budget, manager.config.retry
+        )
         self._catalog = manager.catalog
         self._cached = manager.cached_client
         self._periods: list[str] = list(cfg.extra.get("periods", ["annual", "quarter"]))
         self._initial_limit = int(cfg.extra.get("initial_limit", 40))
         self._incremental_limit = int(cfg.extra.get("incremental_limit", 2))
-        self._safety_net_seconds = parse_interval(str(cfg.extra.get("safety_net_interval", "30d")))
+        self._safety_net_seconds = parse_interval(
+            str(cfg.extra.get("safety_net_interval", "30d"))
+        )
 
     async def run_cycle(self) -> RunOutcome:
         today = date.today()
         if self._should_run_safety_net(today):
             outcome = await self._run_safety_net(today)
             # Mark the safety-net last-run in a separate scope
-            self.state.set_checkpoint("statements_safetynet", "global", today.isoformat())
+            self.state.set_checkpoint(
+                "statements_safetynet", "global", today.isoformat()
+            )
             # Also bump primary checkpoint so incremental window doesn't span both
             self.state.set_checkpoint("statements", "global", today.isoformat())
             return outcome
@@ -117,7 +123,13 @@ class StatementsHarvester(CategoryHarvester):
                         await method(symbol, limit=limit, period=period)
                         succeeded += 1
                     except Exception as exc:
-                        logger.warning("statements.%s(%s, %s) failed: %s", endpoint, symbol, period, exc)
+                        logger.warning(
+                            "statements.%s(%s, %s) failed: %s",
+                            endpoint,
+                            symbol,
+                            period,
+                            exc,
+                        )
             # limit-only endpoints (owner_earnings)
             for endpoint in LIMIT_ONLY_ENDPOINTS:
                 attempted += 1
@@ -126,7 +138,9 @@ class StatementsHarvester(CategoryHarvester):
                     await method(symbol, limit=limit)
                     succeeded += 1
                 except Exception as exc:
-                    logger.warning("statements.%s(%s) failed: %s", endpoint, symbol, exc)
+                    logger.warning(
+                        "statements.%s(%s) failed: %s", endpoint, symbol, exc
+                    )
             # period-only endpoints (segmentation)
             for endpoint in PERIOD_ONLY_ENDPOINTS:
                 for period in self._periods:
@@ -136,12 +150,22 @@ class StatementsHarvester(CategoryHarvester):
                         await method(symbol, period=period)
                         succeeded += 1
                     except Exception as exc:
-                        logger.warning("statements.%s(%s, %s) failed: %s", endpoint, symbol, period, exc)
+                        logger.warning(
+                            "statements.%s(%s, %s) failed: %s",
+                            endpoint,
+                            symbol,
+                            period,
+                            exc,
+                        )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
-        return RunOutcome(status=status, items_attempted=attempted, items_succeeded=succeeded)
+        return RunOutcome(
+            status=status, items_attempted=attempted, items_succeeded=succeeded
+        )
 
 
-def build_statements(cfg: CategoryConfig, manager: "HarvesterManager") -> StatementsHarvester:
+def build_statements(
+    cfg: CategoryConfig, manager: HarvesterManager
+) -> StatementsHarvester:
     return StatementsHarvester(cfg, manager)
 
 

@@ -230,6 +230,7 @@ class FMPBaseClient:
                         logger.exception("on_response_size callback raised; ignoring")
 
                 import json  # local import keeps top of file unchanged
+
                 data = json.loads(raw) if raw else None
 
                 if isinstance(data, dict) and "Error Message" in data:

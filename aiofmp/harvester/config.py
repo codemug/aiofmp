@@ -49,10 +49,14 @@ class RetryPolicy:
 @dataclass
 class RetryConfig:
     on_429: RetryPolicy = field(
-        default_factory=lambda: RetryPolicy(backoff_seconds=[60, 120, 240, 480], max_attempts=4)
+        default_factory=lambda: RetryPolicy(
+            backoff_seconds=[60, 120, 240, 480], max_attempts=4
+        )
     )
     on_5xx: RetryPolicy = field(
-        default_factory=lambda: RetryPolicy(backoff_seconds=[10, 30, 60], max_attempts=3)
+        default_factory=lambda: RetryPolicy(
+            backoff_seconds=[10, 30, 60], max_attempts=3
+        )
     )
 
 
@@ -101,7 +105,9 @@ class HarvestConfig:
     categories: dict[str, CategoryConfig] = field(default_factory=dict)
 
 
-def _parse_retry_policy(raw: dict[str, Any] | None, default: RetryPolicy) -> RetryPolicy:
+def _parse_retry_policy(
+    raw: dict[str, Any] | None, default: RetryPolicy
+) -> RetryPolicy:
     if raw is None:
         return default
     return RetryPolicy(
@@ -116,7 +122,9 @@ def _parse_categories(raw: dict[str, Any] | None) -> dict[str, CategoryConfig]:
     out: dict[str, CategoryConfig] = {}
     for name, body in raw.items():
         if not isinstance(body, dict):
-            raise ValueError(f"category {name!r} must be a mapping, got {type(body).__name__}")
+            raise ValueError(
+                f"category {name!r} must be a mapping, got {type(body).__name__}"
+            )
         if "interval" not in body:
             raise ValueError(f"category {name!r} is missing required field: interval")
         if "enabled" not in body:
@@ -147,9 +155,15 @@ def load_config_from_yaml(path: str | Path) -> HarvestConfig:
 
     budget_raw = raw.get("budget") or {}
     budget = BudgetConfig(
-        monthly_soft_cap_gb=int(budget_raw.get("monthly_soft_cap_gb", defaults.budget.monthly_soft_cap_gb)),
-        monthly_hard_cap_gb=int(budget_raw.get("monthly_hard_cap_gb", defaults.budget.monthly_hard_cap_gb)),
-        soft_cap_behavior=str(budget_raw.get("soft_cap_behavior", defaults.budget.soft_cap_behavior)),
+        monthly_soft_cap_gb=int(
+            budget_raw.get("monthly_soft_cap_gb", defaults.budget.monthly_soft_cap_gb)
+        ),
+        monthly_hard_cap_gb=int(
+            budget_raw.get("monthly_hard_cap_gb", defaults.budget.monthly_hard_cap_gb)
+        ),
+        soft_cap_behavior=str(
+            budget_raw.get("soft_cap_behavior", defaults.budget.soft_cap_behavior)
+        ),
     )
 
     retry_raw = raw.get("retry") or {}
@@ -160,7 +174,9 @@ def load_config_from_yaml(path: str | Path) -> HarvestConfig:
 
     discovery_raw = raw.get("discovery") or {}
     discovery = DiscoveryConfig(
-        refresh_interval=str(discovery_raw.get("refresh_interval", defaults.discovery.refresh_interval)),
+        refresh_interval=str(
+            discovery_raw.get("refresh_interval", defaults.discovery.refresh_interval)
+        ),
     )
     # Validate discovery interval early
     parse_interval(discovery.refresh_interval)
@@ -168,7 +184,9 @@ def load_config_from_yaml(path: str | Path) -> HarvestConfig:
     return HarvestConfig(
         state_dir=str(raw.get("state_dir", defaults.state_dir)),
         log_level=str(raw.get("log_level", defaults.log_level)),
-        shutdown_grace_seconds=int(raw.get("shutdown_grace_seconds", defaults.shutdown_grace_seconds)),
+        shutdown_grace_seconds=int(
+            raw.get("shutdown_grace_seconds", defaults.shutdown_grace_seconds)
+        ),
         budget=budget,
         retry=retry,
         discovery=discovery,

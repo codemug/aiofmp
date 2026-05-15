@@ -20,8 +20,10 @@ _DEFAULT_INDICATORS = ["GDP", "CPI", "UNRATE", "FEDFUNDS", "DFF"]
 
 
 class EconomicsHarvester(CategoryHarvester):
-    def __init__(self, cfg: CategoryConfig, manager: "HarvesterManager") -> None:
-        super().__init__("economics", cfg, manager.state, manager.budget, manager.config.retry)
+    def __init__(self, cfg: CategoryConfig, manager: HarvesterManager) -> None:
+        super().__init__(
+            "economics", cfg, manager.state, manager.budget, manager.config.retry
+        )
         self._cached = manager.cached_client
         self._indicators = list(cfg.extra.get("indicators", _DEFAULT_INDICATORS))
         self._backfill_years = int(cfg.extra.get("backfill_years", 10))
@@ -49,10 +51,14 @@ class EconomicsHarvester(CategoryHarvester):
                 logger.warning("economics.economic_indicators(%s) failed: %s", ind, exc)
 
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
-        return RunOutcome(status=status, items_attempted=attempted, items_succeeded=succeeded)
+        return RunOutcome(
+            status=status, items_attempted=attempted, items_succeeded=succeeded
+        )
 
 
-def build_economics(cfg: CategoryConfig, manager: "HarvesterManager") -> EconomicsHarvester:
+def build_economics(
+    cfg: CategoryConfig, manager: HarvesterManager
+) -> EconomicsHarvester:
     return EconomicsHarvester(cfg, manager)
 
 

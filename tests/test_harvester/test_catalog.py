@@ -23,7 +23,10 @@ def make_fake_fmp() -> MagicMock:
     fmp = MagicMock()
     fmp.directory = MagicMock()
     fmp.directory.financial_symbols = AsyncMock(
-        return_value=[{"symbol": "AAPL", "companyName": "Apple"}, {"symbol": "MSFT", "companyName": "MS"}]
+        return_value=[
+            {"symbol": "AAPL", "companyName": "Apple"},
+            {"symbol": "MSFT", "companyName": "MS"},
+        ]
     )
     fmp.directory.actively_trading = AsyncMock(
         return_value=[{"symbol": "AAPL"}, {"symbol": "MSFT"}, {"symbol": "TSLA"}]
@@ -31,13 +34,19 @@ def make_fake_fmp() -> MagicMock:
     fmp.directory.etf_list = AsyncMock(return_value=[{"symbol": "SPY"}])
 
     fmp.commodity = MagicMock()
-    fmp.commodity.commodities_list = AsyncMock(return_value=[{"symbol": "GCUSD"}, {"symbol": "CLUSD"}])
+    fmp.commodity.commodities_list = AsyncMock(
+        return_value=[{"symbol": "GCUSD"}, {"symbol": "CLUSD"}]
+    )
 
     fmp.forex = MagicMock()
-    fmp.forex.forex_list = AsyncMock(return_value=[{"symbol": "EURUSD"}, {"symbol": "GBPUSD"}])
+    fmp.forex.forex_list = AsyncMock(
+        return_value=[{"symbol": "EURUSD"}, {"symbol": "GBPUSD"}]
+    )
 
     fmp.indexes = MagicMock()
-    fmp.indexes.index_list = AsyncMock(return_value=[{"symbol": "^GSPC"}, {"symbol": "^DJI"}])
+    fmp.indexes.index_list = AsyncMock(
+        return_value=[{"symbol": "^GSPC"}, {"symbol": "^DJI"}]
+    )
     return fmp
 
 
@@ -65,7 +74,9 @@ class TestSymbolCatalog:
         catalog = SymbolCatalog(store, fmp, refresh_interval_seconds=1)
         await catalog.symbols("financial_symbols")
         # Forge an old refresh timestamp
-        store.set_last_refresh("financial_symbols", datetime.now(UTC) - timedelta(hours=2))
+        store.set_last_refresh(
+            "financial_symbols", datetime.now(UTC) - timedelta(hours=2)
+        )
         await catalog.symbols("financial_symbols")
         assert fmp.directory.financial_symbols.await_count == 2
 
@@ -74,7 +85,11 @@ class TestSymbolCatalog:
         fmp = make_fake_fmp()
         catalog = SymbolCatalog(store, fmp, refresh_interval_seconds=86400)
         assert set(await catalog.symbols("financial_symbols")) == {"AAPL", "MSFT"}
-        assert set(await catalog.symbols("actively_trading")) == {"AAPL", "MSFT", "TSLA"}
+        assert set(await catalog.symbols("actively_trading")) == {
+            "AAPL",
+            "MSFT",
+            "TSLA",
+        }
         assert set(await catalog.symbols("commodities")) == {"GCUSD", "CLUSD"}
         assert set(await catalog.symbols("forex_pairs")) == {"EURUSD", "GBPUSD"}
         assert set(await catalog.symbols("indexes")) == {"^GSPC", "^DJI"}
@@ -91,6 +106,7 @@ class TestSymbolCatalog:
     async def test_concurrent_refresh_is_single_shot(self, store: StateStore) -> None:
         """Two parallel calls during discovery must result in one API call."""
         import asyncio
+
         fmp = make_fake_fmp()
         catalog = SymbolCatalog(store, fmp, refresh_interval_seconds=86400)
         await asyncio.gather(

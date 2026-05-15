@@ -66,4 +66,6 @@ class TestMultiCategoryRegistration:
         commodity_ep = reg.get("commodity", "historical_price_full")
         assert chart_ep is not None and commodity_ep is not None
         bound = {"symbol": "GCUSD", "from_date": "2024-01-01", "to_date": "2024-12-31"}
-        assert _derive_storage_key(chart_ep, bound) == _derive_storage_key(commodity_ep, bound)
+        assert _derive_storage_key(chart_ep, bound) == _derive_storage_key(
+            commodity_ep, bound
+        )

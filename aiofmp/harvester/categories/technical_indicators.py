@@ -30,8 +30,14 @@ _VALID_METHODS = {
 
 
 class TechnicalIndicatorsHarvester(CategoryHarvester):
-    def __init__(self, cfg: CategoryConfig, manager: "HarvesterManager") -> None:
-        super().__init__("technical_indicators", cfg, manager.state, manager.budget, manager.config.retry)
+    def __init__(self, cfg: CategoryConfig, manager: HarvesterManager) -> None:
+        super().__init__(
+            "technical_indicators",
+            cfg,
+            manager.state,
+            manager.budget,
+            manager.config.retry,
+        )
         self._catalog = manager.catalog
         self._cached = manager.cached_client
         self._universe = str(cfg.extra.get("symbol_universe", "actively_trading"))
@@ -40,7 +46,9 @@ class TechnicalIndicatorsHarvester(CategoryHarvester):
         indicators: list[dict[str, Any]] = list(cfg.extra.get("indicators", []))
         for ind in indicators:
             if ind.get("method") not in _VALID_METHODS:
-                raise ValueError(f"technical_indicators: unknown method {ind.get('method')!r}")
+                raise ValueError(
+                    f"technical_indicators: unknown method {ind.get('method')!r}"
+                )
         self._indicators = indicators
 
     async def run_cycle(self) -> RunOutcome:
@@ -64,13 +72,21 @@ class TechnicalIndicatorsHarvester(CategoryHarvester):
                 except Exception as exc:
                     logger.warning(
                         "technical_indicators.%s(%s, %d, %s) failed: %s",
-                        method_name, symbol, period_length, timeframe, exc,
+                        method_name,
+                        symbol,
+                        period_length,
+                        timeframe,
+                        exc,
                     )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
-        return RunOutcome(status=status, items_attempted=attempted, items_succeeded=succeeded)
+        return RunOutcome(
+            status=status, items_attempted=attempted, items_succeeded=succeeded
+        )
 
 
-def build_technical_indicators(cfg: CategoryConfig, manager: "HarvesterManager") -> TechnicalIndicatorsHarvester:
+def build_technical_indicators(
+    cfg: CategoryConfig, manager: HarvesterManager
+) -> TechnicalIndicatorsHarvester:
     return TechnicalIndicatorsHarvester(cfg, manager)
 
 

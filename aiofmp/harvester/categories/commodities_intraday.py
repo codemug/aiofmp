@@ -13,8 +13,12 @@ if TYPE_CHECKING:
     from aiofmp.harvester.manager import HarvesterManager
 
 
-def build_commodities_intraday(cfg: CategoryConfig, manager: "HarvesterManager") -> GapFillHarvester:
-    return _build_intraday("commodities_intraday", "commodity", False, "commodities", cfg, manager)
+def build_commodities_intraday(
+    cfg: CategoryConfig, manager: HarvesterManager
+) -> GapFillHarvester:
+    return _build_intraday(
+        "commodities_intraday", "commodity", False, "commodities", cfg, manager
+    )
 
 
 register_category("commodities_intraday", build_commodities_intraday)

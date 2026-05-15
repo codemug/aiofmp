@@ -22,7 +22,11 @@ class TestSnapshotStore:
     @pytest.mark.asyncio
     async def test_write_and_read_single_row(self, storage: ParquetStorage) -> None:
         ss = SnapshotStore(storage)
-        await ss.write("discounted-cash-flow", "AAPL", {"symbol": "AAPL", "dcf": 147.27, "Stock Price": 231.79})
+        await ss.write(
+            "discounted-cash-flow",
+            "AAPL",
+            {"symbol": "AAPL", "dcf": 147.27, "Stock Price": 231.79},
+        )
         row = await ss.read("discounted-cash-flow", "AAPL")
         assert row is not None
         assert row["symbol"] == "AAPL"
@@ -31,8 +35,12 @@ class TestSnapshotStore:
     @pytest.mark.asyncio
     async def test_write_overwrites_previous(self, storage: ParquetStorage) -> None:
         ss = SnapshotStore(storage)
-        await ss.write("ratings-snapshot", "AAPL", {"symbol": "AAPL", "rating": "A-", "score": 4})
-        await ss.write("ratings-snapshot", "AAPL", {"symbol": "AAPL", "rating": "A", "score": 5})
+        await ss.write(
+            "ratings-snapshot", "AAPL", {"symbol": "AAPL", "rating": "A-", "score": 4}
+        )
+        await ss.write(
+            "ratings-snapshot", "AAPL", {"symbol": "AAPL", "rating": "A", "score": 5}
+        )
         row = await ss.read("ratings-snapshot", "AAPL")
         assert row is not None
         assert row["rating"] == "A"

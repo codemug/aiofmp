@@ -209,7 +209,9 @@ class StateStore:
 
     # ----- symbol_catalog -----
 
-    def upsert_symbol(self, universe: str, symbol: str, payload: dict[str, Any]) -> None:
+    def upsert_symbol(
+        self, universe: str, symbol: str, payload: dict[str, Any]
+    ) -> None:
         with self._connect() as conn:
             conn.execute(
                 """
@@ -222,7 +224,9 @@ class StateStore:
             )
             conn.commit()
 
-    def replace_universe(self, universe: str, symbols: list[tuple[str, dict[str, Any]]]) -> None:
+    def replace_universe(
+        self, universe: str, symbols: list[tuple[str, dict[str, Any]]]
+    ) -> None:
         """Atomically replace all symbols for a universe."""
         with self._connect() as conn:
             conn.execute("DELETE FROM symbol_catalog WHERE universe = ?", (universe,))

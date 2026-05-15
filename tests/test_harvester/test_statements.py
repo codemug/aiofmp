@@ -10,10 +10,9 @@ import pytest
 
 from aiofmp.harvester.budget import BudgetTracker
 from aiofmp.harvester.categories.statements import (
+    LIMIT_ONLY_ENDPOINTS,
     PERIOD_AND_LIMIT_ENDPOINTS,
     PERIOD_ONLY_ENDPOINTS,
-    LIMIT_ONLY_ENDPOINTS,
-    StatementsHarvester,
     build_statements,
 )
 from aiofmp.harvester.config import BudgetConfig, CategoryConfig, RetryConfig
@@ -28,9 +27,11 @@ def _wire_statement_methods(stmts: MagicMock) -> None:
 @pytest.fixture
 def manager(tmp_path: Path) -> MagicMock:
     m = MagicMock()
-    m.state = StateStore(tmp_path / "h.sqlite"); m.state.initialize()
+    m.state = StateStore(tmp_path / "h.sqlite")
+    m.state.initialize()
     m.budget = BudgetTracker(m.state, BudgetConfig())
-    m.config = MagicMock(); m.config.retry = RetryConfig()
+    m.config = MagicMock()
+    m.config.retry = RetryConfig()
     m.catalog = MagicMock()
     m.catalog.symbols = AsyncMock(return_value=["AAPL", "MSFT"])
     m.cached_client = MagicMock()
@@ -53,13 +54,19 @@ def _expected_calls_per_symbol(periods: list[str]) -> int:
 
 class TestStatementsFirstRun:
     @pytest.mark.asyncio
-    async def test_first_run_uses_initial_limit_and_full_universe(self, manager: MagicMock) -> None:
+    async def test_first_run_uses_initial_limit_and_full_universe(
+        self, manager: MagicMock
+    ) -> None:
         """With no checkpoint set, first run iterates the financial_symbols universe with initial_limit."""
-        cfg = CategoryConfig(enabled=True, interval="6h", extra={
-            "periods": ["annual", "quarter"],
-            "initial_limit": 40,
-            "incremental_limit": 2,
-        })
+        cfg = CategoryConfig(
+            enabled=True,
+            interval="6h",
+            extra={
+                "periods": ["annual", "quarter"],
+                "initial_limit": 40,
+                "incremental_limit": 2,
+            },
+        )
         h = build_statements(cfg, manager)
         outcome = await h.run_cycle()
 
@@ -83,7 +90,9 @@ class TestStatementsFirstRun:
 
 class TestStatementsIncremental:
     @pytest.mark.asyncio
-    async def test_uses_earnings_calendar_when_checkpoint_exists(self, manager: MagicMock) -> None:
+    async def test_uses_earnings_calendar_when_checkpoint_exists(
+        self, manager: MagicMock
+    ) -> None:
         manager.state.set_checkpoint("statements", "global", "2026-04-01")
         manager.cached_client.calendar.earnings_calendar = AsyncMock(
             return_value=[
@@ -92,9 +101,14 @@ class TestStatementsIncremental:
                 {"symbol": "TSLA", "date": "2026-04-28"},
             ]
         )
-        cfg = CategoryConfig(enabled=True, interval="6h", extra={
-            "periods": ["annual"], "incremental_limit": 2,
-        })
+        cfg = CategoryConfig(
+            enabled=True,
+            interval="6h",
+            extra={
+                "periods": ["annual"],
+                "incremental_limit": 2,
+            },
+        )
         h = build_statements(cfg, manager)
         outcome = await h.run_cycle()
 
@@ -128,9 +142,14 @@ class TestStatementsSafetyNet:
             (datetime.now(UTC) - timedelta(days=40)).date().isoformat(),
         )
         manager.state.set_checkpoint("statements", "global", "2026-05-10")
-        cfg = CategoryConfig(enabled=True, interval="6h", extra={
-            "periods": ["annual"], "safety_net_interval": "30d",
-        })
+        cfg = CategoryConfig(
+            enabled=True,
+            interval="6h",
+            extra={
+                "periods": ["annual"],
+                "safety_net_interval": "30d",
+            },
+        )
         h = build_statements(cfg, manager)
         outcome = await h.run_cycle()
 
@@ -140,6 +159,7 @@ class TestStatementsSafetyNet:
         # New safety-net checkpoint should be today
         new_ckpt = manager.state.get_checkpoint("statements_safetynet", "global")
         from datetime import date
+
         assert new_ckpt == date.today().isoformat()
 
     @pytest.mark.asyncio
@@ -162,4 +182,5 @@ class TestRegistration:
     @pytest.mark.asyncio
     async def test_registers(self) -> None:
         from aiofmp.harvester.categories import _REGISTRY
+
         assert "statements" in _REGISTRY

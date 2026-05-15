@@ -15,7 +15,9 @@ class TemporalPattern(str, Enum):
 
     DATE_RANGE = "date_range"  # Pattern A: from/to date params
     PERIOD_BASED = "period_based"  # Pattern B: limit/period params
-    PAGE_WALK = "page_walk"  # Harvester-only writes; user reads are passthrough-to-storage
+    PAGE_WALK = (
+        "page_walk"  # Harvester-only writes; user reads are passthrough-to-storage
+    )
 
 
 @dataclass(frozen=True)

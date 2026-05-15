@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-import sys
 from pathlib import Path
 from textwrap import dedent
 from unittest.mock import AsyncMock, patch
@@ -33,13 +31,16 @@ def minimal_config(tmp_path: Path) -> Path:
     state = tmp_path / "state"
     state.mkdir()
     cfg = tmp_path / "h.yaml"
-    _write_yaml(cfg, f"""
+    _write_yaml(
+        cfg,
+        f"""
         state_dir: {state}
         categories:
           news:
             enabled: true
             interval: 30m
-    """)
+    """,
+    )
     return cfg
 
 
@@ -47,44 +48,64 @@ class TestHarvestCli:
     def test_missing_api_key(self, runner: CliRunner, minimal_config: Path) -> None:
         # Ensure FMP_API_KEY is NOT in env
         result = runner.invoke(
-            cli, ["harvest", "--config", str(minimal_config), "--once"],
+            cli,
+            ["harvest", "--config", str(minimal_config), "--once"],
             env={"FMP_API_KEY": ""},
         )
         assert result.exit_code != 0
         assert "FMP_API_KEY" in result.output
 
-    def test_dry_run_prints_plan(self, env_with_key, runner: CliRunner, minimal_config: Path) -> None:
+    def test_dry_run_prints_plan(
+        self, env_with_key, runner: CliRunner, minimal_config: Path
+    ) -> None:
         result = runner.invoke(
-            cli, ["harvest", "--config", str(minimal_config), "--dry-run"],
+            cli,
+            ["harvest", "--config", str(minimal_config), "--dry-run"],
         )
         assert result.exit_code == 0
         assert "news" in result.output
         assert "enabled" in result.output.lower()
 
     def test_once_runs_and_exits(
-        self, env_with_key, runner: CliRunner, minimal_config: Path,
+        self,
+        env_with_key,
+        runner: CliRunner,
+        minimal_config: Path,
     ) -> None:
         with patch("aiofmp.harvester.cli._build_cached_client") as m:
             fake_cached = AsyncMock()
             fake_cached.__aenter__ = AsyncMock(return_value=fake_cached)
             fake_cached.__aexit__ = AsyncMock(return_value=None)
             fake_cached.news = type("X", (), {})()
-            for v in ("general_news", "press_releases", "stock_news", "crypto_news", "forex_news"):
+            for v in (
+                "general_news",
+                "press_releases",
+                "stock_news",
+                "crypto_news",
+                "forex_news",
+            ):
                 setattr(fake_cached.news, v, AsyncMock(return_value=[]))
             fake_cached.storage = AsyncMock()
             m.return_value = (AsyncMock(), fake_cached)
 
             result = runner.invoke(
-                cli, ["harvest", "--config", str(minimal_config), "--once"],
+                cli,
+                ["harvest", "--config", str(minimal_config), "--once"],
             )
             assert result.exit_code == 0, result.output
 
     def test_once_with_specific_category(
-        self, env_with_key, runner: CliRunner, tmp_path: Path,
+        self,
+        env_with_key,
+        runner: CliRunner,
+        tmp_path: Path,
     ) -> None:
         cfg = tmp_path / "h.yaml"
-        state = tmp_path / "state"; state.mkdir()
-        _write_yaml(cfg, f"""
+        state = tmp_path / "state"
+        state.mkdir()
+        _write_yaml(
+            cfg,
+            f"""
             state_dir: {state}
             categories:
               news:
@@ -93,13 +114,20 @@ class TestHarvestCli:
               economics:
                 enabled: true
                 interval: 24h
-        """)
+        """,
+        )
         with patch("aiofmp.harvester.cli._build_cached_client") as m:
             fake_cached = AsyncMock()
             fake_cached.__aenter__ = AsyncMock(return_value=fake_cached)
             fake_cached.__aexit__ = AsyncMock(return_value=None)
             fake_cached.news = type("X", (), {})()
-            for v in ("general_news", "press_releases", "stock_news", "crypto_news", "forex_news"):
+            for v in (
+                "general_news",
+                "press_releases",
+                "stock_news",
+                "crypto_news",
+                "forex_news",
+            ):
                 setattr(fake_cached.news, v, AsyncMock(return_value=[]))
             fake_cached.economics = type("X", (), {})()
             fake_cached.economics.treasury_rates = AsyncMock(return_value=[])
@@ -108,7 +136,8 @@ class TestHarvestCli:
             m.return_value = (AsyncMock(), fake_cached)
 
             result = runner.invoke(
-                cli, ["harvest", "--config", str(cfg), "--once", "--category", "news"],
+                cli,
+                ["harvest", "--config", str(cfg), "--once", "--category", "news"],
             )
             assert result.exit_code == 0, result.output
             # Economics should NOT have been called when filtered to news
@@ -116,7 +145,9 @@ class TestHarvestCli:
 
 
 class TestHarvestStatusCli:
-    def test_empty_status(self, env_with_key, runner: CliRunner, minimal_config: Path) -> None:
+    def test_empty_status(
+        self, env_with_key, runner: CliRunner, minimal_config: Path
+    ) -> None:
         result = runner.invoke(cli, ["harvest-status", "--config", str(minimal_config)])
         assert result.exit_code == 0
         # Header should mention categories columns

@@ -7,7 +7,6 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any
 
 import click
 
@@ -15,7 +14,6 @@ from aiofmp import FmpClient
 from aiofmp.cachedclient import CachedClient
 from aiofmp.harvester import categories  # noqa: F401  — triggers registration imports
 from aiofmp.harvester.config import (
-    CategoryConfig,
     HarvestConfig,
     load_config_from_yaml,
 )
@@ -27,7 +25,9 @@ logger = logging.getLogger(__name__)
 def _resolve_api_key(api_key_opt: str | None) -> str:
     key = api_key_opt or os.environ.get("FMP_API_KEY")
     if not key:
-        click.echo("error: FMP_API_KEY env var or --api-key option is required", err=True)
+        click.echo(
+            "error: FMP_API_KEY env var or --api-key option is required", err=True
+        )
         sys.exit(2)
     return key
 
@@ -41,7 +41,9 @@ def _build_cached_client(api_key: str) -> tuple[FmpClient, CachedClient]:
 
 def _print_dry_run_plan(cfg: HarvestConfig, restrict_to: str | None) -> None:
     click.echo(f"state_dir: {cfg.state_dir}")
-    click.echo(f"budget: soft={cfg.budget.monthly_soft_cap_gb}GB hard={cfg.budget.monthly_hard_cap_gb}GB")
+    click.echo(
+        f"budget: soft={cfg.budget.monthly_soft_cap_gb}GB hard={cfg.budget.monthly_hard_cap_gb}GB"
+    )
     click.echo("")
     click.echo(f"{'category':30s} {'enabled':8s} {'interval':10s}")
     click.echo("-" * 50)
@@ -53,7 +55,9 @@ def _print_dry_run_plan(cfg: HarvestConfig, restrict_to: str | None) -> None:
 
 
 async def _run_once(
-    cfg: HarvestConfig, api_key: str, restrict_to: str | None,
+    cfg: HarvestConfig,
+    api_key: str,
+    restrict_to: str | None,
 ) -> int:
     fmp, cached = _build_cached_client(api_key)
     rc = 0
@@ -64,7 +68,9 @@ async def _run_once(
         if restrict_to:
             targets = [t for t in targets if t == restrict_to]
             if not targets:
-                click.echo(f"error: category {restrict_to!r} not enabled in config", err=True)
+                click.echo(
+                    f"error: category {restrict_to!r} not enabled in config", err=True
+                )
                 return 2
         for name in targets:
             await mgr._categories[name]._run_once_and_record()
@@ -93,12 +99,30 @@ async def _run_forever(cfg: HarvestConfig, api_key: str) -> int:
 
 
 @click.command("harvest")
-@click.option("--config", "config_path", required=True, type=click.Path(exists=True, dir_okay=False))
-@click.option("--once", is_flag=True, help="Run each enabled category's next-due cycle and exit.")
-@click.option("--category", "category_name", default=None, help="Restrict to a single category (with --once).")
+@click.option(
+    "--config",
+    "config_path",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+)
+@click.option(
+    "--once", is_flag=True, help="Run each enabled category's next-due cycle and exit."
+)
+@click.option(
+    "--category",
+    "category_name",
+    default=None,
+    help="Restrict to a single category (with --once).",
+)
 @click.option("--dry-run", is_flag=True, help="Print the plan; fetch nothing.")
 @click.option("--api-key", default=None, help="Override FMP_API_KEY env var.")
-def harvest(config_path: str, once: bool, category_name: str | None, dry_run: bool, api_key: str | None) -> None:
+def harvest(
+    config_path: str,
+    once: bool,
+    category_name: str | None,
+    dry_run: bool,
+    api_key: str | None,
+) -> None:
     """Run the aiofmp harvester."""
     cfg = load_config_from_yaml(config_path)
     logging.basicConfig(level=getattr(logging, cfg.log_level.upper(), logging.INFO))
@@ -117,12 +141,18 @@ def harvest(config_path: str, once: bool, category_name: str | None, dry_run: bo
 
 
 @click.command("harvest-status")
-@click.option("--config", "config_path", required=True, type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "--config",
+    "config_path",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+)
 def harvest_status(config_path: str) -> None:
     """Print a tabular summary of the harvester state store."""
     cfg = load_config_from_yaml(config_path)
     state_dir = Path(os.path.expanduser(cfg.state_dir))
     from aiofmp.harvester.state import StateStore
+
     store = StateStore(state_dir / "harvester.sqlite")
     store.initialize()
 
