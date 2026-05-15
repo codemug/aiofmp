@@ -6,6 +6,7 @@ import logging
 from datetime import date, timedelta
 from typing import TYPE_CHECKING, Any
 
+from aiofmp.base import FMPPaywallError
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig
@@ -59,6 +60,7 @@ class TechnicalIndicatorsHarvester(CategoryHarvester):
         from_date = today - timedelta(days=self._backfill_years * 365)
         attempted = 0
         succeeded = 0
+        paywall_short_circuit = False
         for symbol in symbols:
             if self.should_stop():
                 break
@@ -70,7 +72,15 @@ class TechnicalIndicatorsHarvester(CategoryHarvester):
                 method = getattr(self._cached.technical_indicators, method_name)
                 try:
                     await method(symbol, period_length, timeframe, from_date, today)
-                    succeeded += 1
+                except FMPPaywallError as exc:
+                    if self.note_paywall():
+                        logger.warning(
+                            "%s: %d consecutive paywalls; short-circuiting cycle. "
+                            "Last failure: %s/%s: %s",
+                            self.name, self.PAYWALL_THRESHOLD, method_name, symbol, exc,
+                        )
+                        paywall_short_circuit = True
+                        break
                 except Exception as exc:
                     logger.warning(
                         "technical_indicators.%s(%s, %d, %s) failed: %s",
@@ -80,7 +90,12 @@ class TechnicalIndicatorsHarvester(CategoryHarvester):
                         timeframe,
                         exc,
                     )
-        if self.should_stop():
+                else:
+                    self.note_success()
+                    succeeded += 1
+            if paywall_short_circuit:
+                break
+        if paywall_short_circuit or self.should_stop():
             return RunOutcome(
                 status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
             )

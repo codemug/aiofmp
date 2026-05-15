@@ -6,6 +6,7 @@ import logging
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
+from aiofmp.base import FMPPaywallError
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig
@@ -34,25 +35,48 @@ class EconomicsHarvester(CategoryHarvester):
         from_s, to_s = from_date.isoformat(), today.isoformat()
         attempted = 0
         succeeded = 0
+        paywall_short_circuit = False
 
         attempted += 1
         try:
             await self._cached.economics.treasury_rates(from_s, to_s)
-            succeeded += 1
+        except FMPPaywallError as exc:
+            if self.note_paywall():
+                logger.warning(
+                    "%s: %d consecutive paywalls; short-circuiting cycle. "
+                    "Last failure: treasury_rates: %s",
+                    self.name, self.PAYWALL_THRESHOLD, exc,
+                )
+                paywall_short_circuit = True
         except Exception as exc:
             logger.warning("economics.treasury_rates failed: %s", exc)
+        else:
+            self.note_success()
+            succeeded += 1
 
-        for ind in self._indicators:
-            if self.should_stop():
-                break
-            attempted += 1
-            try:
-                await self._cached.economics.economic_indicators(ind, from_s, to_s)
-                succeeded += 1
-            except Exception as exc:
-                logger.warning("economics.economic_indicators(%s) failed: %s", ind, exc)
+        if not paywall_short_circuit:
+            for ind in self._indicators:
+                if self.should_stop():
+                    break
+                attempted += 1
+                try:
+                    await self._cached.economics.economic_indicators(ind, from_s, to_s)
+                except FMPPaywallError as exc:
+                    if self.note_paywall():
+                        logger.warning(
+                            "%s: %d consecutive paywalls; short-circuiting cycle. "
+                            "Last failure: economic_indicators/%s: %s",
+                            self.name, self.PAYWALL_THRESHOLD, ind, exc,
+                        )
+                        paywall_short_circuit = True
+                        break
+                except Exception as exc:
+                    logger.warning("economics.economic_indicators(%s) failed: %s", ind, exc)
+                else:
+                    self.note_success()
+                    succeeded += 1
 
-        if self.should_stop():
+        if paywall_short_circuit or self.should_stop():
             return RunOutcome(
                 status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
             )
