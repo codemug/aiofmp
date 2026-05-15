@@ -71,7 +71,14 @@ class SymbolCatalog:
         async with self._lock(universe):
             if self._is_stale(universe):
                 await self._refresh(universe)
-            return self._store.list_symbols(universe)
+            stored = self._store.list_symbols(universe)
+            # Apply the filter on every read so plan changes (e.g. running on
+            # Starter against an indexes universe that was first populated on
+            # a Premium key) take effect immediately, without waiting for the
+            # next catalog refresh. The filter is cheap and idempotent.
+            if self._symbol_filter is not None:
+                return [s for s in stored if self._symbol_filter(s)]
+            return stored
 
     def _is_stale(self, universe: str) -> bool:
         last = self._store.get_last_refresh(universe)

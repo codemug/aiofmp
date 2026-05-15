@@ -296,7 +296,12 @@ class FMPBaseClient:
 
                 import json  # local import keeps top of file unchanged
 
-                data = json.loads(raw) if raw else None
+                # Some FMP endpoints return status 200 with an empty or
+                # whitespace-only body when the resource isn't included in
+                # the caller's plan (instead of a clean 402). Treat those as
+                # "no data" silently so per-item loops don't trip on a JSON
+                # decode error.
+                data = json.loads(raw) if raw.strip() else None
 
                 if isinstance(data, dict) and "Error Message" in data:
                     raise FMPResponseError(f"API Error: {data['Error Message']}")

@@ -206,3 +206,101 @@ class TestRateLimiterPlumbedIntoFmpClient:
 
         client = FMPBaseClient(api_key="test")
         assert client._rate_limiter is None
+
+
+class TestEmptyResponseBodyHandling:
+    """Some FMP endpoints return 200 + empty body for paywalled resources."""
+
+    @pytest.mark.asyncio
+    async def test_empty_body_returns_none_not_error(self) -> None:
+        from aiofmp.base import FMPBaseClient
+
+        client = FMPBaseClient(api_key="test")
+        fake_resp = MagicMock()
+        fake_resp.status = 200
+        fake_resp.read = AsyncMock(return_value=b"")
+        assert await client._handle_response(fake_resp) is None
+
+    @pytest.mark.asyncio
+    async def test_whitespace_only_body_returns_none(self) -> None:
+        from aiofmp.base import FMPBaseClient
+
+        client = FMPBaseClient(api_key="test")
+        fake_resp = MagicMock()
+        fake_resp.status = 200
+        fake_resp.read = AsyncMock(return_value=b"   \n  \t  \n")
+        assert await client._handle_response(fake_resp) is None
+
+
+class TestSymbolCatalogReadSideFilter:
+    """Plan changes apply to cached universes on the next read, not next refresh."""
+
+    @pytest.mark.asyncio
+    async def test_filter_applies_on_read_to_cached_data(self, tmp_path) -> None:
+        from aiofmp.harvester.catalog import SymbolCatalog
+        from aiofmp.harvester.plan import is_us_symbol
+        from aiofmp.harvester.state import StateStore
+
+        store = StateStore(tmp_path / "h.sqlite")
+        store.initialize()
+
+        # Pretend a previous run (on a different plan) stored a mixed universe.
+        store.replace_universe(
+            "indexes",
+            [
+                ("^GSPC", {"symbol": "^GSPC"}),
+                ("^DJI", {"symbol": "^DJI"}),
+                ("DX-Y.NYB", {"symbol": "DX-Y.NYB"}),  # foreign exchange suffix
+                ("6898.HK", {"symbol": "6898.HK"}),  # foreign exchange suffix
+                ("0P0000RNB", {"symbol": "0P0000RNB"}),  # Morningstar fund ID
+            ],
+        )
+        # Pretend it's fresh so .symbols() doesn't trigger a refresh.
+        from datetime import UTC, datetime
+        store.set_last_refresh("indexes", datetime.now(UTC))
+
+        # Build a catalog with the US-only filter (Starter behaviour).
+        fake_fmp = MagicMock()
+        catalog = SymbolCatalog(
+            store,
+            fake_fmp,
+            refresh_interval_seconds=86_400,
+            symbol_filter=is_us_symbol,
+        )
+
+        # The cached universe has 5 symbols; the filter should drop the 3
+        # non-US ones AT READ TIME (the refresh did not run).
+        result = await catalog.symbols("indexes")
+        assert set(result) == {"^GSPC", "^DJI"}
+        # The non-US symbols remain physically stored — only the read is filtered.
+        assert set(store.list_symbols("indexes")) == {
+            "^GSPC",
+            "^DJI",
+            "DX-Y.NYB",
+            "6898.HK",
+            "0P0000RNB",
+        }
+
+    @pytest.mark.asyncio
+    async def test_no_filter_returns_everything_stored(self, tmp_path) -> None:
+        from aiofmp.harvester.catalog import SymbolCatalog
+        from aiofmp.harvester.state import StateStore
+
+        store = StateStore(tmp_path / "h.sqlite")
+        store.initialize()
+        store.replace_universe(
+            "indexes",
+            [
+                ("^GSPC", {"symbol": "^GSPC"}),
+                ("DX-Y.NYB", {"symbol": "DX-Y.NYB"}),
+            ],
+        )
+        from datetime import UTC, datetime
+        store.set_last_refresh("indexes", datetime.now(UTC))
+
+        fake_fmp = MagicMock()
+        catalog = SymbolCatalog(
+            store, fake_fmp, refresh_interval_seconds=86_400, symbol_filter=None
+        )
+        result = await catalog.symbols("indexes")
+        assert set(result) == {"^GSPC", "DX-Y.NYB"}
