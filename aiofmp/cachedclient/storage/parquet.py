@@ -14,6 +14,65 @@ from .base import StorageBackend, StoredRangeMetadata
 
 logger = logging.getLogger(__name__)
 
+#: Largest integer that round-trips exactly through IEEE 754 double precision
+#: (the type pyarrow falls back to for mixed int+float or int+null columns).
+#: pyarrow raises `Integer value N is outside the range exactly representable
+#: by a IEEE 754 double precision value` for any int with magnitude above this.
+_SAFE_INT_FOR_DOUBLE = 2**53
+
+
+def _sanitize_records_for_parquet(
+    records: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Stringify columns whose values include ints outside the float64-safe range.
+
+    pyarrow.Table.from_pylist infers ``double`` (float64) for any column that
+    contains a float, a None, or a mix of int and float values. float64 only
+    represents integers exactly up to 2^53. FMP occasionally returns
+    integers larger than that (giant market caps, junk growth metrics, etc.).
+    pyarrow then raises ``ArrowInvalid``.
+
+    To preserve precision without forcing every consumer to pick a schema,
+    we stringify ALL values in any column where at least one value crosses
+    the threshold. Other columns are untouched. Records without unsafe
+    values are returned unchanged.
+
+    This is permissive on purpose: stringification is reversible by the
+    caller (``int(s)``), and rare on real data — most fields stay numeric.
+    """
+    if not records:
+        return records
+
+    bad_columns: set[str] = set()
+    for r in records:
+        for k, v in r.items():
+            # bool is a subclass of int — exclude it explicitly.
+            if (
+                isinstance(v, int)
+                and not isinstance(v, bool)
+                and abs(v) > _SAFE_INT_FOR_DOUBLE
+            ):
+                bad_columns.add(k)
+
+    if not bad_columns:
+        return records
+
+    logger.debug(
+        "ParquetStorage: stringifying %d column(s) due to integers outside "
+        "IEEE 754 safe range (|x| > 2^53): %s",
+        len(bad_columns),
+        sorted(bad_columns),
+    )
+
+    sanitized: list[dict[str, Any]] = []
+    for r in records:
+        new_r = dict(r)
+        for col in bad_columns:
+            if col in new_r and new_r[col] is not None:
+                new_r[col] = str(new_r[col])
+        sanitized.append(new_r)
+    return sanitized
+
 
 def _key_to_path(base_dir: Path, key: tuple[str, ...]) -> Path:
     """Convert a storage key tuple to a filesystem directory path.
@@ -117,7 +176,8 @@ class ParquetStorage(StorageBackend):
         data_path = self._data_path(key)
         data_path.parent.mkdir(parents=True, exist_ok=True)
 
-        table = pa.Table.from_pylist(records)
+        safe_records = _sanitize_records_for_parquet(records)
+        table = pa.Table.from_pylist(safe_records)
         pq.write_table(table, data_path, compression="snappy")
 
         _write_metadata(self._meta_path(key), records, date_field)
