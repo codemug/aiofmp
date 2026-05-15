@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from aiofmp.base import FMPBudgetError, FMPRateLimitError, current_harvest_category
+from aiofmp.base import FMPBudgetError, FMPRateLimitError, FMPServerError, current_harvest_category
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.budget import BudgetTracker
 from aiofmp.harvester.config import (
@@ -149,3 +149,53 @@ class TestCategoryHarvester:
         stop_event.set()
         await asyncio.wait_for(task, timeout=2.0)
         assert h.run_count >= 1
+
+
+class TestServerErrorRetry:
+    @pytest.mark.asyncio
+    async def test_5xx_then_ok_retries(self, store: StateStore) -> None:
+        """A single 5xx is retried and the subsequent success is recorded as OK."""
+
+        class FiveHundredOnce(CategoryHarvester):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.calls = 0
+
+            async def run_cycle(self) -> RunOutcome:
+                self.calls += 1
+                if self.calls == 1:
+                    raise FMPServerError("500")
+                return RunOutcome(status=RunStatus.OK, items_attempted=1, items_succeeded=1)
+
+        cfg = CategoryConfig(enabled=True, interval="1s", extra={})
+        retry = RetryConfig(
+            on_429=RetryPolicy(backoff_seconds=[0], max_attempts=1),
+            on_5xx=RetryPolicy(backoff_seconds=[0, 0], max_attempts=2),
+        )
+        budget = BudgetTracker(store, BudgetConfig())
+        h = FiveHundredOnce("five_hundred", cfg, store, budget, retry)
+        await h._run_once_and_record()
+        latest = store.get_latest_run("five_hundred")
+        assert latest is not None
+        assert latest.status == RunStatus.OK
+        assert h.calls == 2
+
+    @pytest.mark.asyncio
+    async def test_always_5xx_marks_partial(self, store: StateStore) -> None:
+        """5xx exhausting max_attempts returns PARTIAL."""
+
+        class AlwaysFiveHundred(CategoryHarvester):
+            async def run_cycle(self) -> RunOutcome:
+                raise FMPServerError("500")
+
+        cfg = CategoryConfig(enabled=True, interval="1s", extra={})
+        retry = RetryConfig(
+            on_429=RetryPolicy(backoff_seconds=[0], max_attempts=1),
+            on_5xx=RetryPolicy(backoff_seconds=[0], max_attempts=2),
+        )
+        budget = BudgetTracker(store, BudgetConfig())
+        h = AlwaysFiveHundred("five_hundred", cfg, store, budget, retry)
+        await h._run_once_and_record()
+        latest = store.get_latest_run("five_hundred")
+        assert latest is not None
+        assert latest.status == RunStatus.PARTIAL
