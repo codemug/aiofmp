@@ -43,6 +43,8 @@ class EconomicsHarvester(CategoryHarvester):
             logger.warning("economics.treasury_rates failed: %s", exc)
 
         for ind in self._indicators:
+            if self.should_stop():
+                break
             attempted += 1
             try:
                 await self._cached.economics.economic_indicators(ind, from_s, to_s)
@@ -50,6 +52,10 @@ class EconomicsHarvester(CategoryHarvester):
             except Exception as exc:
                 logger.warning("economics.economic_indicators(%s) failed: %s", ind, exc)
 
+        if self.should_stop():
+            return RunOutcome(
+                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+            )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(
             status=status, items_attempted=attempted, items_succeeded=succeeded

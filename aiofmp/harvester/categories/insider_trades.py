@@ -45,6 +45,8 @@ class InsiderTradesHarvester(CategoryHarvester):
         newest_seen: date | None = None
 
         for page in range(self._max_pages):
+            if self.should_stop():
+                break
             records = await self._fmp.insider_trades.latest_insider_trades(
                 page=page, limit=self._page_size
             )
@@ -69,8 +71,9 @@ class InsiderTradesHarvester(CategoryHarvester):
                 "insider_trades", "global", newest_seen.isoformat()
             )
 
+        status = RunStatus.PARTIAL if self.should_stop() else RunStatus.OK
         return RunOutcome(
-            status=RunStatus.OK,
+            status=status,
             items_attempted=len(all_records),
             items_succeeded=len(all_records),
         )

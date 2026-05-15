@@ -60,6 +60,8 @@ class TechnicalIndicatorsHarvester(CategoryHarvester):
         attempted = 0
         succeeded = 0
         for symbol in symbols:
+            if self.should_stop():
+                break
             for ind in self._indicators:
                 attempted += 1
                 method_name = ind["method"]
@@ -78,6 +80,10 @@ class TechnicalIndicatorsHarvester(CategoryHarvester):
                         timeframe,
                         exc,
                     )
+        if self.should_stop():
+            return RunOutcome(
+                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+            )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(
             status=status, items_attempted=attempted, items_succeeded=succeeded

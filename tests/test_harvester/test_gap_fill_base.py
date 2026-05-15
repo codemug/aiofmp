@@ -173,3 +173,31 @@ class TestGapFillHarvester:
         outcome = await h.run_cycle()
         assert outcome.status == RunStatus.OK
         assert outcome.items_attempted == 0
+
+
+class TestGapFillCancellation:
+    @pytest.mark.asyncio
+    async def test_stops_between_symbols_when_event_set(self, store, cached_client) -> None:
+        import asyncio as _asyncio
+        from aiofmp.harvester.state import RunStatus
+
+        # 4 symbols, but stop event fires after the first call
+        catalog_with_many = MagicMock()
+        catalog_with_many.symbols = AsyncMock(return_value=["A", "B", "C", "D"])
+
+        stop_event = _asyncio.Event()
+
+        async def maybe_stop(symbol, *args, **kwargs):
+            # Set stop after first symbol completes
+            stop_event.set()
+            return [{"date": "2025-01-15"}]
+
+        cached_client.chart.historical_price_full = AsyncMock(side_effect=maybe_stop)
+
+        h = make_harvester(store=store, catalog=catalog_with_many, cached_client=cached_client)
+        h._stop_event = stop_event
+        outcome = await h.run_cycle()
+
+        # Only the first symbol's call should have happened before the break
+        assert cached_client.chart.historical_price_full.await_count == 1
+        assert outcome.status == RunStatus.PARTIAL

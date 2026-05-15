@@ -45,6 +45,8 @@ class Form13FHarvester(CategoryHarvester):
         newest_seen: date | None = None
 
         for page in range(self._max_pages):
+            if self.should_stop():
+                break
             records = await self._fmp.form13f.latest_filings(
                 page=page, limit=self._page_size
             )
@@ -67,8 +69,9 @@ class Form13FHarvester(CategoryHarvester):
         if newest_seen is not None:
             self.state.set_checkpoint("form13f", "global", newest_seen.isoformat())
 
+        status = RunStatus.PARTIAL if self.should_stop() else RunStatus.OK
         return RunOutcome(
-            status=RunStatus.OK,
+            status=status,
             items_attempted=len(all_records),
             items_succeeded=len(all_records),
         )

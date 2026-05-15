@@ -41,6 +41,8 @@ class NewsHarvester(CategoryHarvester):
         attempted = 0
         succeeded = 0
         for v in self._variants:
+            if self.should_stop():
+                break
             attempted += 1
             method = getattr(self._cached.news, v)
             try:
@@ -50,6 +52,10 @@ class NewsHarvester(CategoryHarvester):
                 succeeded += 1
             except Exception as exc:
                 logger.warning("news.%s failed: %s", v, exc)
+        if self.should_stop():
+            return RunOutcome(
+                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+            )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(
             status=status, items_attempted=attempted, items_succeeded=succeeded
