@@ -1,0 +1,125 @@
+# Example harvester config — copy to harvester.yaml and edit as needed.
+# Cap defaults assume FMP starter plan (20 GB/month).
+
+state_dir: ~/.aiofmp/cache
+log_level: INFO
+
+budget:
+  monthly_soft_cap_gb: 18
+  monthly_hard_cap_gb: 20
+  soft_cap_behavior: pause_until_next_month   # | warn_only
+
+retry:
+  on_429:
+    backoff_seconds: [60, 120, 240, 480]
+    max_attempts: 4
+  on_5xx:
+    backoff_seconds: [10, 30, 60]
+    max_attempts: 3
+
+discovery:
+  refresh_interval: 7d
+
+categories:
+  statements:
+    enabled: true
+    interval: 6h
+    periods: [annual, quarter]
+    initial_limit: 40
+    incremental_limit: 2
+    safety_net_interval: 30d
+
+  analyst_estimates:
+    enabled: true
+    interval: 24h
+    estimate_periods: [annual]
+    max_backfill_years: 3
+    page_size: 100
+
+  analyst_snapshots:
+    enabled: true
+    interval: 24h
+    include: [ratings_snapshot, price_target_consensus, price_target_summary, stock_grades_summary]
+
+  chart_eod:
+    enabled: true
+    interval: 24h
+    variants: [historical_price_full]
+    backfill_years: 10
+
+  chart_intraday:
+    enabled: false
+    interval: 4h
+    timeframes: [1hour]
+    backfill_days: 30
+
+  technical_indicators:
+    enabled: false
+    interval: 24h
+    indicators: []
+
+  news:
+    enabled: true
+    interval: 30m
+    variants: [general_news, press_releases, stock_news, crypto_news, forex_news]
+    backfill_days_initial: 30
+    page_size: 100
+
+  insider_trades:
+    enabled: true
+    interval: 6h
+    max_pages: 200
+    page_size: 100
+
+  form13f:
+    enabled: true
+    interval: 24h
+    max_pages: 50
+    page_size: 100
+
+  economics:
+    enabled: true
+    interval: 24h
+    indicators: [GDP, CPI, UNRATE, FEDFUNDS, DFF]
+    backfill_years: 10
+
+  commodities_eod:
+    enabled: true
+    interval: 24h
+    variants: [historical_price_full]
+    backfill_years: 10
+
+  commodities_intraday:
+    enabled: false
+    interval: 4h
+    timeframes: [1hour]
+    backfill_days: 30
+
+  forex_eod:
+    enabled: true
+    interval: 24h
+    variants: [historical_price_full]
+    backfill_years: 10
+
+  forex_intraday:
+    enabled: false
+    interval: 4h
+    timeframes: [1hour]
+    backfill_days: 30
+
+  indexes_eod:
+    enabled: true
+    interval: 24h
+    variants: [historical_price_eod_full]
+    backfill_years: 10
+
+  indexes_intraday:
+    enabled: false
+    interval: 4h
+    timeframes: [1hour]
+    backfill_days: 30
+
+  dcf:
+    enabled: true
+    interval: 24h
+    include: [dcf_valuation, levered_dcf]
