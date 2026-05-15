@@ -13,7 +13,7 @@ from aiofmp.cachedclient.storage.parquet import ParquetStorage
 from aiofmp.harvester.budget import BudgetTracker
 from aiofmp.harvester.categories.form13f import build_form13f
 from aiofmp.harvester.config import BudgetConfig, CategoryConfig, RetryConfig
-from aiofmp.harvester.state import StateStore
+from aiofmp.harvester.state import RunStatus, StateStore
 
 
 def _filing(cik: str, d: str) -> dict[str, Any]:
@@ -98,3 +98,18 @@ class TestForm13F:
         from aiofmp.harvester.categories import _REGISTRY
 
         assert "form13f" in _REGISTRY
+
+
+class TestForm13FPartialPersist:
+    @pytest.mark.asyncio
+    async def test_mid_walk_failure_persists_earlier_pages(self, manager) -> None:
+        manager.fmp_client.form13f.latest_filings.side_effect = [
+            [_filing("0001067983", "2026-05-01")],
+            RuntimeError("blip"),
+        ]
+        cfg = CategoryConfig(enabled=True, interval="24h", extra={"max_pages": 5, "page_size": 1})
+        h = build_form13f(cfg, manager)
+        outcome = await h.run_cycle()
+        berk = await manager.cached_client.storage.read(("institutional-ownership/latest", "0001067983"))
+        assert len(berk) == 1
+        assert outcome.status == RunStatus.PARTIAL

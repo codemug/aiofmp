@@ -3,6 +3,7 @@
 
 state_dir: ~/.aiofmp/cache
 log_level: INFO
+shutdown_grace_seconds: 30           # SIGINT grace before cancelling tasks
 
 budget:
   monthly_soft_cap_gb: 18

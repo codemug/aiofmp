@@ -76,3 +76,19 @@ class TestNews:
         from aiofmp.harvester.categories import _REGISTRY
 
         assert "news" in _REGISTRY
+
+
+class TestNewsPagination:
+    @pytest.mark.asyncio
+    async def test_walks_multiple_pages_until_empty(self, manager: MagicMock) -> None:
+        manager.cached_client.news.general_news = AsyncMock(side_effect=[
+            [{"publishedDate": "2026-05-15 10:00:00"}],
+            [{"publishedDate": "2026-05-14 10:00:00"}],
+            [],  # stops here
+        ])
+        cfg = CategoryConfig(enabled=True, interval="30m", extra={"variants": ["general_news"]})
+        h = build_news(cfg, manager)
+        outcome = await h.run_cycle()
+        assert manager.cached_client.news.general_news.await_count == 3
+        assert outcome.items_attempted == 1
+        assert outcome.items_succeeded == 1

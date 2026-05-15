@@ -43,36 +43,42 @@ class Form13FHarvester(CategoryHarvester):
         last_ckpt = _parse_iso(self.state.get_checkpoint("form13f", "global"))
         all_records: list[dict[str, Any]] = []
         newest_seen: date | None = None
+        fetch_errors = 0
 
-        for page in range(self._max_pages):
-            if self.should_stop():
-                break
-            records = await self._fmp.form13f.latest_filings(
-                page=page, limit=self._page_size
-            )
-            if not records:
-                break
-            all_records.extend(records)
-            page_dates = [_parse_iso(r.get("acceptedDate")) for r in records]
-            page_dates = [d for d in page_dates if d is not None]
-            if page_dates:
-                page_newest = max(page_dates)
-                page_oldest = min(page_dates)
-                if newest_seen is None or page_newest > newest_seen:
-                    newest_seen = page_newest
-                if last_ckpt is not None and page_oldest <= last_ckpt:
+        try:
+            for page in range(self._max_pages):
+                if self.should_stop():
                     break
+                try:
+                    records = await self._fmp.form13f.latest_filings(
+                        page=page, limit=self._page_size
+                    )
+                except Exception as exc:
+                    fetch_errors += 1
+                    logger.warning("form13f page %d failed: %s", page, exc)
+                    break
+                if not records:
+                    break
+                all_records.extend(records)
+                page_dates = [_parse_iso(r.get("acceptedDate")) for r in records]
+                page_dates = [d for d in page_dates if d is not None]
+                if page_dates:
+                    page_newest = max(page_dates)
+                    page_oldest = min(page_dates)
+                    if newest_seen is None or page_newest > newest_seen:
+                        newest_seen = page_newest
+                    if last_ckpt is not None and page_oldest <= last_ckpt:
+                        break
+        finally:
+            if all_records:
+                await self._persist(all_records)
+            if newest_seen is not None:
+                self.state.set_checkpoint("form13f", "global", newest_seen.isoformat())
 
-        if all_records:
-            await self._persist(all_records)
-
-        if newest_seen is not None:
-            self.state.set_checkpoint("form13f", "global", newest_seen.isoformat())
-
-        status = RunStatus.PARTIAL if self.should_stop() else RunStatus.OK
+        status = RunStatus.PARTIAL if (fetch_errors > 0 or self.should_stop()) else RunStatus.OK
         return RunOutcome(
             status=status,
-            items_attempted=len(all_records),
+            items_attempted=len(all_records) + fetch_errors,
             items_succeeded=len(all_records),
         )
 
