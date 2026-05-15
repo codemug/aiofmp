@@ -207,3 +207,9 @@ marimo/_lsp/
 __marimo__/
 .idea
 .fmp_key
+
+# Local harvester operator config (template lives at examples/harvester.example.yaml)
+/harvester.yaml
+
+# Scratch files used to draft PR bodies — safe to ignore
+/.pr-body-*.md
