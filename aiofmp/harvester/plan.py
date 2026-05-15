@@ -8,15 +8,22 @@ historical-data depth, and set of available endpoints. The harvester reads
     ``aiofmp.base._SlidingWindowRateLimiter``).
   - Pick sensible defaults for ``backfill_years`` and ``periods``.
   - Filter symbol universes (Starter is US-only).
-  - Short-circuit categories that are guaranteed paywalled on the plan.
+  - Auto-disable categories that are entirely paywalled.
+  - Skip per-endpoint paywalls (e.g. ``statements.key_metrics`` doesn't
+    accept ``period=quarter`` on Starter).
 
-Values come from https://site.financialmodelingprep.com/developer/docs/pricing
-(as of 2026-05). Keep in sync with that page when FMP changes their tiers.
+The Starter row was verified by probing the live FMP API in 2026-05
+(see ``scripts/probe_plan.sh``). Premium/Ultimate rows are
+conservatively populated as "everything Starter blocks plus quarter
+fundamentals" — re-probe with a Premium key to verify.
+
+Keep in sync with https://site.financialmodelingprep.com/developer/docs/pricing
+when FMP changes their tiers.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -27,47 +34,103 @@ class PlanLimits:
     calls_per_minute: int
     monthly_bandwidth_gb: int
     historical_years: int
-    has_quarterly_fundamentals: bool
     us_only_coverage: bool
+    #: Categories that are 100% paywalled on this plan. The manager will skip
+    #: them at start-up with an info-level log line instead of letting them
+    #: discover-and-short-circuit every cycle.
+    paywalled_categories: frozenset[str] = field(default_factory=frozenset)
+    #: Statement endpoints whose ``period=quarter`` variant is paywalled.
+    #: The remaining quarterly endpoints still run.
+    quarterly_paywalled_statement_endpoints: frozenset[str] = field(
+        default_factory=frozenset
+    )
+    #: Intraday chart timeframes that the plan doesn't include. The harvester
+    #: drops these from each intraday category's ``timeframes`` list with a
+    #: one-line log notice.
+    intraday_paywalled_timeframes: frozenset[str] = field(default_factory=frozenset)
+    #: News variants paywalled on this plan. Filtered out of news.variants.
+    paywalled_news_variants: frozenset[str] = field(default_factory=frozenset)
+    #: Whether ``analyst.financial_estimates`` with ``period=quarter`` is paywalled.
+    quarterly_analyst_estimates_paywalled: bool = False
 
 
 # Per-plan capability snapshot. Keep in sync with FMP's pricing page.
 PLAN_LIMITS: dict[str, PlanLimits] = {
     # Basic is 250 calls/DAY, not per-minute. We normalise to a very low RPM
-    # so the limiter never blows the daily cap during sustained use.
+    # so the limiter never blows the daily cap during sustained use. Not
+    # probed live; assume Basic is at least as restricted as Starter.
     "basic": PlanLimits(
         name="basic",
         calls_per_minute=10,
-        monthly_bandwidth_gb=0,  # 500 MB, rounded down to 0 GB for the soft cap
+        monthly_bandwidth_gb=0,  # 500 MB; rounded down for the soft cap
         historical_years=5,
-        has_quarterly_fundamentals=False,
         us_only_coverage=True,
+        paywalled_categories=frozenset({"form13f"}),
+        quarterly_paywalled_statement_endpoints=frozenset(
+            {
+                "key_metrics",
+                "financial_ratios",
+                "revenue_product_segmentation",
+                "revenue_geographic_segmentation",
+            }
+        ),
+        intraday_paywalled_timeframes=frozenset({"1min"}),
+        paywalled_news_variants=frozenset({"press_releases"}),
+        quarterly_analyst_estimates_paywalled=True,
     ),
     "starter": PlanLimits(
         name="starter",
         calls_per_minute=300,
         monthly_bandwidth_gb=20,
         historical_years=5,
-        has_quarterly_fundamentals=False,
         us_only_coverage=True,
+        paywalled_categories=frozenset({"form13f"}),
+        quarterly_paywalled_statement_endpoints=frozenset(
+            {
+                "key_metrics",
+                "financial_ratios",
+                "revenue_product_segmentation",
+                "revenue_geographic_segmentation",
+            }
+        ),
+        intraday_paywalled_timeframes=frozenset({"1min"}),
+        paywalled_news_variants=frozenset({"press_releases"}),
+        quarterly_analyst_estimates_paywalled=True,
     ),
     "premium": PlanLimits(
         name="premium",
         calls_per_minute=750,
         monthly_bandwidth_gb=50,
         historical_years=30,
-        has_quarterly_fundamentals=True,
         us_only_coverage=False,
+        # Premium gets everything Starter has plus full fundamentals,
+        # intraday and technical indicators. The full 13F path may still
+        # require Ultimate; left enabled here and the paywall short-circuit
+        # will catch it if so.
     ),
     "ultimate": PlanLimits(
         name="ultimate",
         calls_per_minute=3000,
         monthly_bandwidth_gb=150,
         historical_years=30,
-        has_quarterly_fundamentals=True,
         us_only_coverage=False,
     ),
 }
+
+
+#: FMP's actual economic-indicator names. The defaults the harvester used
+#: to ship (UNRATE, FEDFUNDS, DFF, DCOILWTICO) are FRED codes; FMP uses
+#: these instead and returns ``"Invalid name"`` for the FRED codes.
+VALID_ECONOMIC_INDICATORS: tuple[str, ...] = (
+    "GDP",
+    "realGDP",
+    "CPI",
+    "inflationRate",
+    "consumerSentiment",
+    "unemploymentRate",
+    "federalFunds",
+    "retailSales",
+)
 
 
 def get_plan_limits(name: str) -> PlanLimits:

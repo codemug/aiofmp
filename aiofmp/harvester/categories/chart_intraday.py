@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig
 from aiofmp.harvester.gap_fill_base import GapFillHarvester, GapFillTarget
+from aiofmp.harvester.plan import get_plan_limits
 
 if TYPE_CHECKING:
     from aiofmp.harvester.manager import HarvesterManager
 
+logger = logging.getLogger(__name__)
 
 _DEFAULT_TIMEFRAMES = ["1hour"]
 _TF_TO_METHOD = {
@@ -37,6 +40,16 @@ def _build_intraday(
             raise ValueError(
                 f"{name}: unknown timeframe {tf!r}; valid: {list(_TF_TO_METHOD)}"
             )
+    # Drop timeframes the plan doesn't include (e.g. Starter is missing 1min).
+    plan_limits = get_plan_limits(manager.config.plan)
+    paywalled = plan_limits.intraday_paywalled_timeframes
+    blocked = [tf for tf in timeframes if tf in paywalled]
+    if blocked:
+        logger.info(
+            "%s (plan=%s): dropping paywalled timeframes %s",
+            name, plan_limits.name, blocked,
+        )
+        timeframes = [tf for tf in timeframes if tf not in paywalled]
     backfill_days = int(cfg.extra.get("backfill_days", 30))
     user_universe = str(cfg.extra.get("symbol_universe", universe))
 

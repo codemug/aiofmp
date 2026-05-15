@@ -22,6 +22,7 @@ def manager(tmp_path: Path) -> MagicMock:
     m.budget = BudgetTracker(m.state, BudgetConfig())
     m.config = MagicMock()
     m.config.retry = RetryConfig()
+    m.config.plan = "premium"  # avoid plan-aware paywall filters in unit tests
     m.cached_client = MagicMock()
     m.cached_client.news = MagicMock()
     for v in (

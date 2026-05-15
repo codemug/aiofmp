@@ -10,6 +10,7 @@ from aiofmp.base import FMPPaywallError
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig
+from aiofmp.harvester.plan import get_plan_limits
 from aiofmp.harvester.state import RunStatus
 
 if TYPE_CHECKING:
@@ -32,7 +33,18 @@ class NewsHarvester(CategoryHarvester):
             "news", cfg, manager.state, manager.budget, manager.config.retry
         )
         self._cached = manager.cached_client
-        self._variants = list(cfg.extra.get("variants", _DEFAULT_VARIANTS))
+        variants = list(cfg.extra.get("variants", _DEFAULT_VARIANTS))
+        # Plan-aware variant filter: e.g. press_releases is paywalled on Starter.
+        plan_limits = get_plan_limits(manager.config.plan)
+        paywalled = plan_limits.paywalled_news_variants
+        blocked = [v for v in variants if v in paywalled]
+        if blocked:
+            logger.info(
+                "news (plan=%s): dropping paywalled variants %s",
+                plan_limits.name, blocked,
+            )
+            variants = [v for v in variants if v not in paywalled]
+        self._variants = variants
         self._backfill_days = int(cfg.extra.get("backfill_days_initial", 30))
         self._page_size = int(cfg.extra.get("page_size", 100))
 

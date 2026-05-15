@@ -21,6 +21,7 @@ def manager(tmp_path: Path) -> MagicMock:
     m.budget = BudgetTracker(m.state, BudgetConfig())
     m.config = MagicMock()
     m.config.retry = RetryConfig()
+    m.config.plan = "premium"  # avoid plan-aware paywall filters in unit tests
     m.catalog = MagicMock()
     m.catalog.symbols = AsyncMock(return_value=["EURUSD"])
     m.cached_client = MagicMock()
