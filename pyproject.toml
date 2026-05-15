@@ -71,6 +71,7 @@ dev = [
 ]
 
 [project.scripts]
+aiofmp = "aiofmp.cli:cli"
 aiofmp-mcp-server = "aiofmp.cli:mcp_server"
 
 [build-system]
