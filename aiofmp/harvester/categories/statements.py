@@ -142,6 +142,8 @@ class StatementsHarvester(CategoryHarvester):
         attempted = 0
         succeeded = 0
         for symbol in symbols:
+            if self.should_stop():
+                break
             # 10 (period, limit) endpoints × periods
             for endpoint in PERIOD_AND_LIMIT_ENDPOINTS:
                 for period in self._periods:
@@ -185,6 +187,10 @@ class StatementsHarvester(CategoryHarvester):
                             period,
                             exc,
                         )
+        if self.should_stop():
+            return RunOutcome(
+                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+            )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(
             status=status, items_attempted=attempted, items_succeeded=succeeded

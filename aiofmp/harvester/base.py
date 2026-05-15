@@ -54,14 +54,20 @@ class CategoryHarvester(abc.ABC):
         self.state = state
         self.budget = budget
         self.retry = retry
+        self._stop_event: asyncio.Event | None = None
 
     @abc.abstractmethod
     async def run_cycle(self) -> RunOutcome:
         """Execute one harvest cycle. Must be overridden by subclasses."""
         raise NotImplementedError
 
+    def should_stop(self) -> bool:
+        """True if the manager has requested shutdown. Subclasses should check this between iterations."""
+        return self._stop_event is not None and self._stop_event.is_set()
+
     async def run_forever(self, stop_event: asyncio.Event) -> None:
         """Main loop: run a cycle each ``interval_seconds`` until stop_event fires."""
+        self._stop_event = stop_event
         interval = self.config.interval_seconds
         while not stop_event.is_set():
             await self._run_once_and_record()

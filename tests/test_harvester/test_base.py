@@ -151,6 +151,29 @@ class TestCategoryHarvester:
         assert h.run_count >= 1
 
 
+class TestCooperativeCancellation:
+    @pytest.mark.asyncio
+    async def test_should_stop_false_when_no_event(self, store: StateStore) -> None:
+        config = CategoryConfig(enabled=True, interval="1s", extra={})
+        budget = BudgetTracker(store, BudgetConfig())
+        retry = RetryConfig()
+        h = FakeCategory("fake", config, store, budget, retry)
+        assert h.should_stop() is False
+
+    @pytest.mark.asyncio
+    async def test_should_stop_reflects_event_state(self, store: StateStore) -> None:
+        import asyncio as _asyncio
+        config = CategoryConfig(enabled=True, interval="1s", extra={})
+        budget = BudgetTracker(store, BudgetConfig())
+        retry = RetryConfig()
+        h = FakeCategory("fake", config, store, budget, retry)
+        event = _asyncio.Event()
+        h._stop_event = event
+        assert h.should_stop() is False
+        event.set()
+        assert h.should_stop() is True
+
+
 class TestServerErrorRetry:
     @pytest.mark.asyncio
     async def test_5xx_then_ok_retries(self, store: StateStore) -> None:

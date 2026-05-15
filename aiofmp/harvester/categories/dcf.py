@@ -44,6 +44,8 @@ class DcfHarvester(CategoryHarvester):
         attempted = 0
         succeeded = 0
         for symbol in symbols:
+            if self.should_stop():
+                break
             for name in self._include:
                 attempted += 1
                 method_name, endpoint = _INCLUDE_MAP[name]
@@ -56,6 +58,10 @@ class DcfHarvester(CategoryHarvester):
                     succeeded += 1
                 except Exception as exc:
                     logger.warning("dcf.%s(%s) failed: %s", method_name, symbol, exc)
+        if self.should_stop():
+            return RunOutcome(
+                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+            )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(
             status=status, items_attempted=attempted, items_succeeded=succeeded

@@ -51,6 +51,8 @@ class AnalystSnapshotsHarvester(CategoryHarvester):
         attempted = 0
         succeeded = 0
         for symbol in symbols:
+            if self.should_stop():
+                break
             for name in self._include:
                 attempted += 1
                 method_name, endpoint = _INCLUDE_MAP[name]
@@ -68,6 +70,10 @@ class AnalystSnapshotsHarvester(CategoryHarvester):
                         symbol,
                         exc,
                     )
+        if self.should_stop():
+            return RunOutcome(
+                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+            )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(
             status=status, items_attempted=attempted, items_succeeded=succeeded
