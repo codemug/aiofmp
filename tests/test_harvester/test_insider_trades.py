@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -24,9 +23,11 @@ def _trade(symbol: str, d: str) -> dict[str, Any]:
 @pytest_asyncio.fixture
 async def manager(tmp_path: Path) -> MagicMock:
     m = MagicMock()
-    m.state = StateStore(tmp_path / "h.sqlite"); m.state.initialize()
+    m.state = StateStore(tmp_path / "h.sqlite")
+    m.state.initialize()
     m.budget = BudgetTracker(m.state, BudgetConfig())
-    m.config = MagicMock(); m.config.retry = RetryConfig()
+    m.config = MagicMock()
+    m.config.retry = RetryConfig()
     m.fmp_client = MagicMock()
     m.fmp_client.insider_trades = MagicMock()
     m.fmp_client.insider_trades.latest_insider_trades = AsyncMock()
@@ -45,9 +46,14 @@ class TestInsiderTrades:
             [_trade("AAPL", "2026-04-25"), _trade("GOOGL", "2026-04-24")],
             [],  # stops the walk
         ]
-        cfg = CategoryConfig(enabled=True, interval="6h", extra={
-            "max_pages": 10, "page_size": 2,
-        })
+        cfg = CategoryConfig(
+            enabled=True,
+            interval="6h",
+            extra={
+                "max_pages": 10,
+                "page_size": 2,
+            },
+        )
         h = build_insider_trades(cfg, manager)
         outcome = await h.run_cycle()
         assert outcome.status == RunStatus.OK
@@ -61,7 +67,9 @@ class TestInsiderTrades:
             [_trade("MSFT", "2026-04-25")],  # < checkpoint -> stop after this page
             [_trade("X", "2020-01-01")],
         ]
-        cfg = CategoryConfig(enabled=True, interval="6h", extra={"page_size": 1, "max_pages": 10})
+        cfg = CategoryConfig(
+            enabled=True, interval="6h", extra={"page_size": 1, "max_pages": 10}
+        )
         h = build_insider_trades(cfg, manager)
         await h.run_cycle()
         assert manager.fmp_client.insider_trades.latest_insider_trades.await_count == 2
@@ -75,17 +83,27 @@ class TestInsiderTrades:
         cfg = CategoryConfig(enabled=True, interval="6h", extra={})
         h = build_insider_trades(cfg, manager)
         await h.run_cycle()
-        aapl_rows = await manager.cached_client.storage.read(("insider-trading/latest", "AAPL"))
-        msft_rows = await manager.cached_client.storage.read(("insider-trading/latest", "MSFT"))
-        global_rows = await manager.cached_client.storage.read(("insider-trading/latest", "_global"))
+        aapl_rows = await manager.cached_client.storage.read(
+            ("insider-trading/latest", "AAPL")
+        )
+        msft_rows = await manager.cached_client.storage.read(
+            ("insider-trading/latest", "MSFT")
+        )
+        global_rows = await manager.cached_client.storage.read(
+            ("insider-trading/latest", "_global")
+        )
         assert any(r["symbol"] == "AAPL" for r in aapl_rows)
         assert any(r["symbol"] == "MSFT" for r in msft_rows)
         assert len(global_rows) == 2
 
     @pytest.mark.asyncio
     async def test_max_pages_safety(self, manager) -> None:
-        manager.fmp_client.insider_trades.latest_insider_trades.return_value = [_trade("AAPL", "2026-05-01")]
-        cfg = CategoryConfig(enabled=True, interval="6h", extra={"max_pages": 3, "page_size": 1})
+        manager.fmp_client.insider_trades.latest_insider_trades.return_value = [
+            _trade("AAPL", "2026-05-01")
+        ]
+        cfg = CategoryConfig(
+            enabled=True, interval="6h", extra={"max_pages": 3, "page_size": 1}
+        )
         h = build_insider_trades(cfg, manager)
         await h.run_cycle()
         assert manager.fmp_client.insider_trades.latest_insider_trades.await_count == 3
@@ -93,4 +111,5 @@ class TestInsiderTrades:
     @pytest.mark.asyncio
     async def test_registers(self) -> None:
         from aiofmp.harvester.categories import _REGISTRY
+
         assert "insider_trades" in _REGISTRY

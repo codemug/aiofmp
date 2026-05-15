@@ -110,7 +110,9 @@ class TestHarvesterManager:
 
     @pytest.mark.asyncio
     async def test_unknown_category_in_config_skipped(self, cfg: HarvestConfig) -> None:
-        cfg.categories["nonexistent"] = CategoryConfig(enabled=True, interval="1s", extra={})
+        cfg.categories["nonexistent"] = CategoryConfig(
+            enabled=True, interval="1s", extra={}
+        )
         mgr = HarvesterManager(cfg, fmp_client=MagicMock(), cached_client=MagicMock())
         _patch_builder(mgr, CountingCategory)
         await mgr.start()
@@ -122,6 +124,7 @@ class TestBandwidthAttachment:
     @pytest.mark.asyncio
     async def test_callback_attached_to_fmp_client(self, cfg: HarvestConfig) -> None:
         from aiofmp.base import FMPBaseClient, current_harvest_category
+
         fmp = FMPBaseClient(api_key="dummy")
         mgr = HarvesterManager(cfg, fmp_client=fmp, cached_client=MagicMock())
         await mgr.start()
@@ -139,13 +142,14 @@ class TestBandwidthAttachment:
     @pytest.mark.asyncio
     async def test_callback_triggers_hard_cap(self, cfg: HarvestConfig) -> None:
         from aiofmp.base import FMPBaseClient, FMPBudgetError, current_harvest_category
+
         cfg.budget.monthly_soft_cap_gb = 1
         cfg.budget.monthly_hard_cap_gb = 2
         fmp = FMPBaseClient(api_key="dummy")
         mgr = HarvesterManager(cfg, fmp_client=fmp, cached_client=MagicMock())
         await mgr.start()
         # Pre-fill the ledger to past hard cap
-        mgr.budget.record_bytes("alpha", 3 * 1024 ** 3)
+        mgr.budget.record_bytes("alpha", 3 * 1024**3)
         token = current_harvest_category.set("alpha")
         try:
             with pytest.raises(FMPBudgetError):

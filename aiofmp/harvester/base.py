@@ -13,11 +13,9 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
 
 from aiofmp.base import (
     FMPBudgetError,
-    FMPError,
     FMPRateLimitError,
     current_harvest_category,
 )
@@ -89,7 +87,10 @@ class CategoryHarvester(abc.ABC):
         except Exception as e:
             logger.exception("Unhandled error in %s.run_cycle", self.name)
             self.state.record_run_finish(
-                self.name, started, status=RunStatus.ERROR, error=f"{type(e).__name__}: {e}"
+                self.name,
+                started,
+                status=RunStatus.ERROR,
+                error=f"{type(e).__name__}: {e}",
             )
             return
         finally:
@@ -116,10 +117,15 @@ class CategoryHarvester(abc.ABC):
                 last_exc = e
                 if attempt + 1 >= policy.max_attempts:
                     break
-                delay = policy.backoff_seconds[min(attempt, len(policy.backoff_seconds) - 1)]
+                delay = policy.backoff_seconds[
+                    min(attempt, len(policy.backoff_seconds) - 1)
+                ]
                 logger.warning(
                     "%s hit 429 (attempt %d/%d); sleeping %ds",
-                    self.name, attempt + 1, policy.max_attempts, delay,
+                    self.name,
+                    attempt + 1,
+                    policy.max_attempts,
+                    delay,
                 )
                 if delay > 0:
                     await asyncio.sleep(delay)

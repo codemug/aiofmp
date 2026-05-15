@@ -26,8 +26,10 @@ _DEFAULT_INCLUDE = list(_INCLUDE_MAP.keys())
 
 
 class DcfHarvester(CategoryHarvester):
-    def __init__(self, cfg: CategoryConfig, manager: "HarvesterManager") -> None:
-        super().__init__("dcf", cfg, manager.state, manager.budget, manager.config.retry)
+    def __init__(self, cfg: CategoryConfig, manager: HarvesterManager) -> None:
+        super().__init__(
+            "dcf", cfg, manager.state, manager.budget, manager.config.retry
+        )
         self._catalog = manager.catalog
         self._fmp = manager.fmp_client
         self._snapshots = SnapshotStore(manager.cached_client.storage)
@@ -55,10 +57,12 @@ class DcfHarvester(CategoryHarvester):
                 except Exception as exc:
                     logger.warning("dcf.%s(%s) failed: %s", method_name, symbol, exc)
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
-        return RunOutcome(status=status, items_attempted=attempted, items_succeeded=succeeded)
+        return RunOutcome(
+            status=status, items_attempted=attempted, items_succeeded=succeeded
+        )
 
 
-def build_dcf(cfg: CategoryConfig, manager: "HarvesterManager") -> DcfHarvester:
+def build_dcf(cfg: CategoryConfig, manager: HarvesterManager) -> DcfHarvester:
     return DcfHarvester(cfg, manager)
 
 

@@ -13,7 +13,9 @@ if TYPE_CHECKING:
     from aiofmp.harvester.manager import HarvesterManager
 
 
-def build_indexes_intraday(cfg: CategoryConfig, manager: "HarvesterManager") -> GapFillHarvester:
+def build_indexes_intraday(
+    cfg: CategoryConfig, manager: HarvesterManager
+) -> GapFillHarvester:
     return _build_intraday("indexes_intraday", "indexes", True, "indexes", cfg, manager)
 
 

@@ -29,17 +29,23 @@ def _build_intraday(
     use_date_obj: bool,
     universe: str,
     cfg: CategoryConfig,
-    manager: "HarvesterManager",
+    manager: HarvesterManager,
 ) -> GapFillHarvester:
     timeframes = list(cfg.extra.get("timeframes", _DEFAULT_TIMEFRAMES))
     for tf in timeframes:
         if tf not in _TF_TO_METHOD:
-            raise ValueError(f"{name}: unknown timeframe {tf!r}; valid: {list(_TF_TO_METHOD)}")
+            raise ValueError(
+                f"{name}: unknown timeframe {tf!r}; valid: {list(_TF_TO_METHOD)}"
+            )
     backfill_days = int(cfg.extra.get("backfill_days", 30))
     user_universe = str(cfg.extra.get("symbol_universe", universe))
 
     targets = [
-        GapFillTarget(category_attr=category_attr, method_name=_TF_TO_METHOD[tf], use_date_obj=use_date_obj)
+        GapFillTarget(
+            category_attr=category_attr,
+            method_name=_TF_TO_METHOD[tf],
+            use_date_obj=use_date_obj,
+        )
         for tf in timeframes
     ]
     return GapFillHarvester(
@@ -56,8 +62,12 @@ def _build_intraday(
     )
 
 
-def build_chart_intraday(cfg: CategoryConfig, manager: "HarvesterManager") -> GapFillHarvester:
-    return _build_intraday("chart_intraday", "chart", False, "actively_trading", cfg, manager)
+def build_chart_intraday(
+    cfg: CategoryConfig, manager: HarvesterManager
+) -> GapFillHarvester:
+    return _build_intraday(
+        "chart_intraday", "chart", False, "actively_trading", cfg, manager
+    )
 
 
 register_category("chart_intraday", build_chart_intraday)

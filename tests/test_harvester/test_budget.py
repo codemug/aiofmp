@@ -12,7 +12,7 @@ from aiofmp.harvester.budget import BudgetTracker
 from aiofmp.harvester.config import BudgetConfig
 from aiofmp.harvester.state import StateStore
 
-GB = 1024 ** 3
+GB = 1024**3
 
 
 @pytest.fixture
@@ -53,7 +53,9 @@ def test_is_paused_at_soft_cap(store: StateStore) -> None:
 
 
 def test_is_paused_warn_only(store: StateStore) -> None:
-    cfg = BudgetConfig(monthly_soft_cap_gb=1, monthly_hard_cap_gb=2, soft_cap_behavior="warn_only")
+    cfg = BudgetConfig(
+        monthly_soft_cap_gb=1, monthly_hard_cap_gb=2, soft_cap_behavior="warn_only"
+    )
     tracker = BudgetTracker(store, cfg)
     tracker.record_bytes(category="statements", byte_count=1 * GB)
     assert tracker.is_paused("statements") is False  # warn only — never pauses

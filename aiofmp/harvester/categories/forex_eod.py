@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 _DEFAULT_VARIANTS = ["historical_price_full"]
 
 
-def build_forex_eod(cfg: CategoryConfig, manager: "HarvesterManager") -> GapFillHarvester:
+def build_forex_eod(cfg: CategoryConfig, manager: HarvesterManager) -> GapFillHarvester:
     variants = list(cfg.extra.get("variants", _DEFAULT_VARIANTS))
     backfill_years = int(cfg.extra.get("backfill_years", 10))
     targets = [

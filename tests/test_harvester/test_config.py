@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from textwrap import dedent
+
 import pytest
 
 from aiofmp.harvester.config import (
@@ -10,6 +12,7 @@ from aiofmp.harvester.config import (
     DiscoveryConfig,
     HarvestConfig,
     RetryConfig,
+    load_config_from_yaml,
     parse_interval,
 )
 
@@ -68,11 +71,6 @@ class TestHarvestConfig:
         assert b.soft_cap_behavior == "pause_until_next_month"
 
 
-from textwrap import dedent
-
-from aiofmp.harvester.config import load_config_from_yaml
-
-
 class TestLoadConfigFromYaml:
     def test_minimal(self, tmp_path) -> None:
         path = tmp_path / "h.yaml"
@@ -84,7 +82,8 @@ class TestLoadConfigFromYaml:
 
     def test_full(self, tmp_path) -> None:
         path = tmp_path / "h.yaml"
-        path.write_text(dedent("""
+        path.write_text(
+            dedent("""
             state_dir: /var/aiofmp
             log_level: DEBUG
             budget:
@@ -109,7 +108,9 @@ class TestLoadConfigFromYaml:
               chart_eod:
                 enabled: false
                 interval: 24h
-        """).strip() + "\n")
+        """).strip()
+            + "\n"
+        )
         cfg = load_config_from_yaml(path)
         assert cfg.state_dir == "/var/aiofmp"
         assert cfg.log_level == "DEBUG"
@@ -128,11 +129,13 @@ class TestLoadConfigFromYaml:
 
     def test_missing_file(self, tmp_path) -> None:
         import pytest
+
         with pytest.raises(FileNotFoundError):
             load_config_from_yaml(tmp_path / "nope.yaml")
 
     def test_bad_yaml(self, tmp_path) -> None:
         import pytest
+
         path = tmp_path / "bad.yaml"
         path.write_text("state_dir: [unclosed\n")
         with pytest.raises(ValueError, match="yaml"):
@@ -140,12 +143,16 @@ class TestLoadConfigFromYaml:
 
     def test_category_missing_required(self, tmp_path) -> None:
         import pytest
+
         path = tmp_path / "h.yaml"
-        path.write_text(dedent("""
+        path.write_text(
+            dedent("""
             categories:
               statements:
                 enabled: true
                 # interval missing
-        """).strip() + "\n")
+        """).strip()
+            + "\n"
+        )
         with pytest.raises(ValueError, match="interval"):
             load_config_from_yaml(path)

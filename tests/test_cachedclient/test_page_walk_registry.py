@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -58,7 +56,9 @@ async def storage(tmp_path: Path) -> ParquetStorage:
 
 class TestPageWalkProxyReadOnly:
     @pytest.mark.asyncio
-    async def test_user_call_returns_stored_records(self, storage: ParquetStorage) -> None:
+    async def test_user_call_returns_stored_records(
+        self, storage: ParquetStorage
+    ) -> None:
         """When a user calls a PAGE_WALK-registered method, the proxy returns stored records
         without contacting the upstream API."""
         reg = EndpointRegistry()
@@ -89,10 +89,14 @@ class TestPageWalkProxyReadOnly:
 
         real_category = MagicMock()
         # If the proxy mistakenly calls upstream, this will be invoked:
-        real_category.financial_estimates = AsyncMock(side_effect=AssertionError("upstream called"))
+        real_category.financial_estimates = AsyncMock(
+            side_effect=AssertionError("upstream called")
+        )
 
         proxy = CachedCategoryProxy(real_category, "analyst", storage, reg)
-        records = await proxy.financial_estimates(symbol="AAPL", period="annual", page=0, limit=2)
+        records = await proxy.financial_estimates(
+            symbol="AAPL", period="annual", page=0, limit=2
+        )
 
         # Returns the requested limit slice (newest first by date convention)
         assert len(records) == 2
@@ -100,7 +104,9 @@ class TestPageWalkProxyReadOnly:
         assert records[1]["date"] == "2024-12-31"
 
     @pytest.mark.asyncio
-    async def test_user_call_returns_empty_when_no_storage(self, storage: ParquetStorage) -> None:
+    async def test_user_call_returns_empty_when_no_storage(
+        self, storage: ParquetStorage
+    ) -> None:
         reg = EndpointRegistry()
         reg.register(
             CacheableEndpoint(
@@ -116,7 +122,9 @@ class TestPageWalkProxyReadOnly:
             )
         )
         real_category = MagicMock()
-        real_category.financial_estimates = AsyncMock(side_effect=AssertionError("upstream called"))
+        real_category.financial_estimates = AsyncMock(
+            side_effect=AssertionError("upstream called")
+        )
         proxy = CachedCategoryProxy(real_category, "analyst", storage, reg)
         records = await proxy.financial_estimates(symbol="MSFT", period="annual")
         assert records == []

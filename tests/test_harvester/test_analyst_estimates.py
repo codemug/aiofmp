@@ -24,9 +24,11 @@ def _row(d: str) -> dict[str, Any]:
 @pytest_asyncio.fixture
 async def manager(tmp_path: Path) -> MagicMock:
     m = MagicMock()
-    m.state = StateStore(tmp_path / "h.sqlite"); m.state.initialize()
+    m.state = StateStore(tmp_path / "h.sqlite")
+    m.state.initialize()
     m.budget = BudgetTracker(m.state, BudgetConfig())
-    m.config = MagicMock(); m.config.retry = RetryConfig()
+    m.config = MagicMock()
+    m.config.retry = RetryConfig()
     m.catalog = MagicMock()
     m.catalog.symbols = AsyncMock(return_value=["AAPL"])
 
@@ -48,14 +50,20 @@ class TestAnalystEstimates:
         manager.fmp_client.analyst.financial_estimates.side_effect = [
             [_row((today - timedelta(days=400)).isoformat())],
             [_row((today - timedelta(days=800)).isoformat())],
-            [_row((today - timedelta(days=1200)).isoformat())],  # > 3y backfill -> stop after this
+            [
+                _row((today - timedelta(days=1200)).isoformat())
+            ],  # > 3y backfill -> stop after this
             [],  # safety
         ]
-        cfg = CategoryConfig(enabled=True, interval="24h", extra={
-            "estimate_periods": ["annual"],
-            "max_backfill_years": 3,
-            "page_size": 1,
-        })
+        cfg = CategoryConfig(
+            enabled=True,
+            interval="24h",
+            extra={
+                "estimate_periods": ["annual"],
+                "max_backfill_years": 3,
+                "page_size": 1,
+            },
+        )
         h = build_analyst_estimates(cfg, manager)
         outcome = await h.run_cycle()
 
@@ -72,11 +80,15 @@ class TestAnalystEstimates:
             [_row("2024-12-31"), _row("2024-09-30")],
             [_row("2024-07-31"), _row("2024-04-30")],  # 2024-04-30 < 2024-06-01 -> stop
         ]
-        cfg = CategoryConfig(enabled=True, interval="24h", extra={
-            "estimate_periods": ["annual"],
-            "max_backfill_years": 3,
-            "page_size": 2,
-        })
+        cfg = CategoryConfig(
+            enabled=True,
+            interval="24h",
+            extra={
+                "estimate_periods": ["annual"],
+                "max_backfill_years": 3,
+                "page_size": 2,
+            },
+        )
         h = build_analyst_estimates(cfg, manager)
         outcome = await h.run_cycle()
         assert manager.fmp_client.analyst.financial_estimates.await_count == 2
@@ -88,7 +100,9 @@ class TestAnalystEstimates:
             [_row("2025-01-01")],
             [],
         ]
-        cfg = CategoryConfig(enabled=True, interval="24h", extra={"estimate_periods": ["annual"]})
+        cfg = CategoryConfig(
+            enabled=True, interval="24h", extra={"estimate_periods": ["annual"]}
+        )
         h = build_analyst_estimates(cfg, manager)
         await h.run_cycle()
         assert manager.fmp_client.analyst.financial_estimates.await_count == 2
@@ -99,10 +113,14 @@ class TestAnalystEstimates:
             [_row("2025-12-31")],
             [],
         ]
-        cfg = CategoryConfig(enabled=True, interval="24h", extra={"estimate_periods": ["annual"]})
+        cfg = CategoryConfig(
+            enabled=True, interval="24h", extra={"estimate_periods": ["annual"]}
+        )
         h = build_analyst_estimates(cfg, manager)
         await h.run_cycle()
-        records = await manager.cached_client.storage.read(("analyst-estimates", "AAPL", "annual"))
+        records = await manager.cached_client.storage.read(
+            ("analyst-estimates", "AAPL", "annual")
+        )
         assert len(records) >= 1
         assert records[0]["date"] == "2025-12-31"
 
@@ -115,8 +133,12 @@ class TestAnalystEstimates:
                 raise RuntimeError("blown")
             return [_row("2025-12-31")] if page == 0 else []
 
-        manager.fmp_client.analyst.financial_estimates = AsyncMock(side_effect=side_effect)
-        cfg = CategoryConfig(enabled=True, interval="24h", extra={"estimate_periods": ["annual"]})
+        manager.fmp_client.analyst.financial_estimates = AsyncMock(
+            side_effect=side_effect
+        )
+        cfg = CategoryConfig(
+            enabled=True, interval="24h", extra={"estimate_periods": ["annual"]}
+        )
         h = build_analyst_estimates(cfg, manager)
         outcome = await h.run_cycle()
         assert outcome.items_attempted == 2
@@ -126,4 +148,5 @@ class TestAnalystEstimates:
     @pytest.mark.asyncio
     async def test_registers(self) -> None:
         from aiofmp.harvester.categories import _REGISTRY
+
         assert "analyst_estimates" in _REGISTRY

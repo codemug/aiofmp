@@ -23,7 +23,9 @@ def register_category(name: str, factory: CategoryFactory) -> None:
     _REGISTRY[name] = factory
 
 
-def build_category(name: str, cfg: "CategoryConfig", manager: "HarvesterManager") -> "CategoryHarvester":
+def build_category(
+    name: str, cfg: CategoryConfig, manager: HarvesterManager
+) -> CategoryHarvester:
     if name not in _REGISTRY:
         raise KeyError(name)
     return _REGISTRY[name](cfg, manager)

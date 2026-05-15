@@ -25,8 +25,14 @@ def _fake_manager(tmp_path: Path) -> MagicMock:
     # Set up every (category, method) the tests touch:
     for cat in ("chart", "commodity", "forex", "indexes"):
         c = MagicMock()
-        for method in ("intraday_1min", "intraday_5min", "intraday_15min", "intraday_30min",
-                       "intraday_1hour", "intraday_4hour"):
+        for method in (
+            "intraday_1min",
+            "intraday_5min",
+            "intraday_15min",
+            "intraday_30min",
+            "intraday_1hour",
+            "intraday_4hour",
+        ):
             setattr(c, method, AsyncMock(return_value=[]))
         setattr(m.cached_client, cat, c)
     return m
@@ -36,6 +42,7 @@ class TestChartIntradayFamily:
     @pytest.mark.asyncio
     async def test_chart_intraday_default_timeframe(self, tmp_path: Path) -> None:
         from aiofmp.harvester.categories.chart_intraday import build_chart_intraday
+
         mgr = _fake_manager(tmp_path)
         cfg = CategoryConfig(enabled=True, interval="4h", extra={})
         h = build_chart_intraday(cfg, mgr)
@@ -45,24 +52,35 @@ class TestChartIntradayFamily:
     @pytest.mark.asyncio
     async def test_chart_intraday_multiple_timeframes(self, tmp_path: Path) -> None:
         from aiofmp.harvester.categories.chart_intraday import build_chart_intraday
+
         mgr = _fake_manager(tmp_path)
-        cfg = CategoryConfig(enabled=True, interval="4h", extra={"timeframes": ["1hour", "5min"]})
+        cfg = CategoryConfig(
+            enabled=True, interval="4h", extra={"timeframes": ["1hour", "5min"]}
+        )
         h = build_chart_intraday(cfg, mgr)
         await h.run_cycle()
         mgr.cached_client.chart.intraday_1hour.assert_awaited_once()
         mgr.cached_client.chart.intraday_5min.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_chart_intraday_invalid_timeframe_raises(self, tmp_path: Path) -> None:
+    async def test_chart_intraday_invalid_timeframe_raises(
+        self, tmp_path: Path
+    ) -> None:
         from aiofmp.harvester.categories.chart_intraday import build_chart_intraday
+
         mgr = _fake_manager(tmp_path)
-        cfg = CategoryConfig(enabled=True, interval="4h", extra={"timeframes": ["weekly"]})
+        cfg = CategoryConfig(
+            enabled=True, interval="4h", extra={"timeframes": ["weekly"]}
+        )
         with pytest.raises(ValueError, match="weekly"):
             build_chart_intraday(cfg, mgr)
 
     @pytest.mark.asyncio
     async def test_commodities_intraday(self, tmp_path: Path) -> None:
-        from aiofmp.harvester.categories.commodities_intraday import build_commodities_intraday
+        from aiofmp.harvester.categories.commodities_intraday import (
+            build_commodities_intraday,
+        )
+
         mgr = _fake_manager(tmp_path)
         mgr.catalog.symbols = AsyncMock(return_value=["GCUSD"])
         cfg = CategoryConfig(enabled=True, interval="4h", extra={})
@@ -74,6 +92,7 @@ class TestChartIntradayFamily:
     @pytest.mark.asyncio
     async def test_forex_intraday(self, tmp_path: Path) -> None:
         from aiofmp.harvester.categories.forex_intraday import build_forex_intraday
+
         mgr = _fake_manager(tmp_path)
         mgr.catalog.symbols = AsyncMock(return_value=["EURUSD"])
         cfg = CategoryConfig(enabled=True, interval="4h", extra={})
@@ -85,7 +104,9 @@ class TestChartIntradayFamily:
     @pytest.mark.asyncio
     async def test_indexes_intraday_uses_date_obj(self, tmp_path: Path) -> None:
         from datetime import date
+
         from aiofmp.harvester.categories.indexes_intraday import build_indexes_intraday
+
         mgr = _fake_manager(tmp_path)
         mgr.catalog.symbols = AsyncMock(return_value=["^GSPC"])
         cfg = CategoryConfig(enabled=True, interval="4h", extra={})

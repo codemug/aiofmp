@@ -24,7 +24,9 @@ class SnapshotStore:
     async def write(self, endpoint: str, entity: str, payload: dict[str, Any]) -> None:
         if not payload:
             return
-        await self._storage.write(self._key(endpoint, entity), [payload], date_field="date")
+        await self._storage.write(
+            self._key(endpoint, entity), [payload], date_field="date"
+        )
 
     async def read(self, endpoint: str, entity: str) -> dict[str, Any] | None:
         records = await self._storage.read(self._key(endpoint, entity))

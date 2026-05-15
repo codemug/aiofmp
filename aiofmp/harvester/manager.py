@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 class HarvesterManager:
     """Loads enabled categories, runs them as concurrent asyncio tasks until stopped."""
 
-    def __init__(self, config: HarvestConfig, fmp_client: Any, cached_client: Any) -> None:
+    def __init__(
+        self, config: HarvestConfig, fmp_client: Any, cached_client: Any
+    ) -> None:
         self.config = config
         self.fmp_client = fmp_client
         self.cached_client = cached_client
@@ -65,6 +67,7 @@ class HarvesterManager:
 
     def _build_category(self, name: str, cat_cfg: CategoryConfig) -> CategoryHarvester:
         from aiofmp.harvester.categories import build_category
+
         return build_category(name, cat_cfg, self)
 
     def request_stop(self) -> None:
@@ -86,17 +89,24 @@ class HarvesterManager:
 
         for name, cat in self._categories.items():
             self._tasks.append(
-                asyncio.create_task(cat.run_forever(self._stop_event), name=f"harvester:{name}")
+                asyncio.create_task(
+                    cat.run_forever(self._stop_event), name=f"harvester:{name}"
+                )
             )
         await self._stop_event.wait()
 
-        logger.info("Stop requested; waiting for %d categor(y/ies) (grace %ds)",
-                    len(self._tasks), self.config.shutdown_grace_seconds)
+        logger.info(
+            "Stop requested; waiting for %d categor(y/ies) (grace %ds)",
+            len(self._tasks),
+            self.config.shutdown_grace_seconds,
+        )
         done, pending = await asyncio.wait(
             self._tasks, timeout=self.config.shutdown_grace_seconds
         )
         if pending:
-            logger.warning("%d task(s) did not stop within grace; cancelling", len(pending))
+            logger.warning(
+                "%d task(s) did not stop within grace; cancelling", len(pending)
+            )
             for t in pending:
                 t.cancel()
             await asyncio.gather(*pending, return_exceptions=True)

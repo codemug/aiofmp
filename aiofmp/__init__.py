@@ -44,6 +44,7 @@ __all__ = [
     "FMPRateLimitError",
     "FMPResponseError",
     "FMPBudgetError",
+    "current_harvest_category",
 ]
 
 
