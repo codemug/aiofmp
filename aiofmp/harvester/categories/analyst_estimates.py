@@ -10,6 +10,7 @@ from aiofmp.base import FMPPaywallError
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig
+from aiofmp.harvester.plan import get_plan_limits
 from aiofmp.harvester.state import RunStatus
 
 if TYPE_CHECKING:
@@ -42,7 +43,16 @@ class AnalystEstimatesHarvester(CategoryHarvester):
         self._catalog = manager.catalog
         self._fmp = manager.fmp_client
         self._storage = manager.cached_client.storage
-        self._periods: list[str] = list(cfg.extra.get("estimate_periods", ["annual"]))
+        periods = list(cfg.extra.get("estimate_periods", ["annual"]))
+        # Plan-aware: drop quarter when paywalled (Starter/Basic).
+        plan_limits = get_plan_limits(manager.config.plan)
+        if plan_limits.quarterly_analyst_estimates_paywalled and "quarter" in periods:
+            logger.info(
+                "analyst_estimates (plan=%s): dropping period=quarter (paywalled)",
+                plan_limits.name,
+            )
+            periods = [p for p in periods if p != "quarter"]
+        self._periods: list[str] = periods
         self._max_backfill_days = int(cfg.extra.get("max_backfill_years", 3)) * 365
         self._page_size = int(cfg.extra.get("page_size", 100))
 

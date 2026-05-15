@@ -35,25 +35,50 @@ class TestGetPlanLimits:
         assert s.calls_per_minute == 300
         assert s.monthly_bandwidth_gb == 20
         assert s.historical_years == 5
-        assert s.has_quarterly_fundamentals is False
         assert s.us_only_coverage is True
+        # Probed 2026-05 against a Starter key:
+        assert "form13f" in s.paywalled_categories
+        assert "key_metrics" in s.quarterly_paywalled_statement_endpoints
+        assert "financial_ratios" in s.quarterly_paywalled_statement_endpoints
+        assert "1min" in s.intraday_paywalled_timeframes
+        assert "press_releases" in s.paywalled_news_variants
+        assert s.quarterly_analyst_estimates_paywalled is True
 
     def test_ultimate_caps(self) -> None:
         u = get_plan_limits("ultimate")
         assert u.calls_per_minute == 3000
         assert u.historical_years == 30
-        assert u.has_quarterly_fundamentals is True
         assert u.us_only_coverage is False
+        # Ultimate has none of Starter's paywall restrictions.
+        assert u.paywalled_categories == frozenset()
+        assert u.quarterly_paywalled_statement_endpoints == frozenset()
+        assert u.intraday_paywalled_timeframes == frozenset()
+        assert u.paywalled_news_variants == frozenset()
+        assert u.quarterly_analyst_estimates_paywalled is False
 
     def test_unknown_plan_raises(self) -> None:
         with pytest.raises(ValueError, match="unknown plan"):
             get_plan_limits("nonexistent")
 
-    def test_premium_has_quarterly(self) -> None:
-        assert get_plan_limits("premium").has_quarterly_fundamentals is True
+    def test_premium_unrestricted(self) -> None:
+        p = get_plan_limits("premium")
+        assert p.quarterly_paywalled_statement_endpoints == frozenset()
+        assert p.us_only_coverage is False
 
     def test_basic_us_only(self) -> None:
         assert get_plan_limits("basic").us_only_coverage is True
+
+    def test_valid_economic_indicators_starts_with_GDP(self) -> None:
+        from aiofmp.harvester.plan import VALID_ECONOMIC_INDICATORS
+
+        # Probed 2026-05: these are FMP's actual indicator names.
+        assert "GDP" in VALID_ECONOMIC_INDICATORS
+        assert "inflationRate" in VALID_ECONOMIC_INDICATORS
+        assert "unemploymentRate" in VALID_ECONOMIC_INDICATORS
+        assert "federalFunds" in VALID_ECONOMIC_INDICATORS
+        # FRED codes are NOT valid here.
+        assert "UNRATE" not in VALID_ECONOMIC_INDICATORS
+        assert "FEDFUNDS" not in VALID_ECONOMIC_INDICATORS
 
 
 class TestIsUsSymbol:

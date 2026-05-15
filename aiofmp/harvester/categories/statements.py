@@ -50,17 +50,21 @@ class StatementsHarvester(CategoryHarvester):
         )
         self._catalog = manager.catalog
         self._cached = manager.cached_client
-        configured_periods = list(cfg.extra.get("periods", ["annual", "quarter"]))
-        # Plan-aware filter: Basic/Starter cannot fetch quarterly fundamentals.
-        # Strip 'quarter' from the configured list rather than 402-ing every call.
+        self._periods: list[str] = list(cfg.extra.get("periods", ["annual", "quarter"]))
+        # Plan-aware per-endpoint paywall: e.g. on Starter, key_metrics +
+        # ratios + segmentation don't accept period=quarter, but the other
+        # 10 statement endpoints do. The whole-category quarter-drop the
+        # earlier code did was too aggressive.
         plan_limits = get_plan_limits(manager.config.plan)
-        if not plan_limits.has_quarterly_fundamentals and "quarter" in configured_periods:
+        self._quarterly_paywalled: frozenset[str] = (
+            plan_limits.quarterly_paywalled_statement_endpoints
+        )
+        if "quarter" in self._periods and self._quarterly_paywalled:
             logger.info(
-                "statements: dropping 'quarter' period (not included in plan %r)",
+                "statements (plan=%s): period=quarter will be skipped for %s",
                 plan_limits.name,
+                sorted(self._quarterly_paywalled),
             )
-            configured_periods = [p for p in configured_periods if p != "quarter"]
-        self._periods: list[str] = configured_periods
         self._initial_limit = int(cfg.extra.get("initial_limit", 40))
         self._incremental_limit = int(cfg.extra.get("incremental_limit", 2))
         self._safety_net_seconds = parse_interval(
@@ -159,6 +163,14 @@ class StatementsHarvester(CategoryHarvester):
             # 10 (period, limit) endpoints × periods
             for endpoint in PERIOD_AND_LIMIT_ENDPOINTS:
                 for period in self._periods:
+                    # Skip endpoints we know are paywalled for this period
+                    # on the current plan (e.g. Starter blocks
+                    # period=quarter for key_metrics/ratios).
+                    if (
+                        period == "quarter"
+                        and endpoint in self._quarterly_paywalled
+                    ):
+                        continue
                     attempted += 1
                     method = getattr(self._cached.statements, endpoint)
                     try:
@@ -215,6 +227,11 @@ class StatementsHarvester(CategoryHarvester):
             # period-only endpoints (segmentation)
             for endpoint in PERIOD_ONLY_ENDPOINTS:
                 for period in self._periods:
+                    if (
+                        period == "quarter"
+                        and endpoint in self._quarterly_paywalled
+                    ):
+                        continue
                     attempted += 1
                     method = getattr(self._cached.statements, endpoint)
                     try:

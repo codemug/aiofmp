@@ -10,6 +10,7 @@ from aiofmp.base import FMPPaywallError
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig
+from aiofmp.harvester.plan import VALID_ECONOMIC_INDICATORS
 from aiofmp.harvester.state import RunStatus
 
 if TYPE_CHECKING:
@@ -17,7 +18,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_INDICATORS = ["GDP", "CPI", "UNRATE", "FEDFUNDS", "DFF"]
+# Defaults use FMP's actual indicator names. The intuitive FRED codes
+# (UNRATE, FEDFUNDS, DFF) return ``Invalid name`` against FMP. See
+# aiofmp.harvester.plan.VALID_ECONOMIC_INDICATORS for the canonical list.
+_DEFAULT_INDICATORS = list(VALID_ECONOMIC_INDICATORS)
 
 
 class EconomicsHarvester(CategoryHarvester):

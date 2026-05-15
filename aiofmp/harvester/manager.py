@@ -56,9 +56,18 @@ class HarvesterManager:
         # Wire bandwidth + hard-cap callback into the shared FmpClient
         self.fmp_client.on_response_size = self._on_response_size
 
+        plan_limits = get_plan_limits(self.config.plan)
         for name, cat_cfg in self.config.categories.items():
             if not cat_cfg.enabled:
                 logger.info("Category %s is disabled; skipping", name)
+                continue
+            if name in plan_limits.paywalled_categories:
+                logger.info(
+                    "Category %s is entirely paywalled on plan %r; skipping. "
+                    "Enable a higher plan to harvest it.",
+                    name,
+                    plan_limits.name,
+                )
                 continue
             try:
                 self._categories[name] = self._build_category(name, cat_cfg)
