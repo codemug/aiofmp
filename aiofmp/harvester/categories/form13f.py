@@ -7,6 +7,7 @@ from collections import defaultdict
 from datetime import date
 from typing import TYPE_CHECKING, Any
 
+from aiofmp.base import FMPPaywallError
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig
@@ -44,6 +45,7 @@ class Form13FHarvester(CategoryHarvester):
         all_records: list[dict[str, Any]] = []
         newest_seen: date | None = None
         fetch_errors = 0
+        paywall_short_circuit = False
 
         try:
             for page in range(self._max_pages):
@@ -53,6 +55,14 @@ class Form13FHarvester(CategoryHarvester):
                     records = await self._fmp.form13f.latest_filings(
                         page=page, limit=self._page_size
                     )
+                except FMPPaywallError as exc:
+                    logger.warning(
+                        "%s: %d consecutive paywalls; short-circuiting cycle. "
+                        "Last failure: page %d: %s",
+                        self.name, self.PAYWALL_THRESHOLD, page, exc,
+                    )
+                    paywall_short_circuit = True
+                    break
                 except Exception as exc:
                     fetch_errors += 1
                     logger.warning("form13f page %d failed: %s", page, exc)
@@ -60,6 +70,7 @@ class Form13FHarvester(CategoryHarvester):
                 if not records:
                     break
                 all_records.extend(records)
+                self.note_success()
                 page_dates = [_parse_iso(r.get("acceptedDate")) for r in records]
                 page_dates = [d for d in page_dates if d is not None]
                 if page_dates:
@@ -75,6 +86,12 @@ class Form13FHarvester(CategoryHarvester):
             if newest_seen is not None:
                 self.state.set_checkpoint("form13f", "global", newest_seen.isoformat())
 
+        if paywall_short_circuit:
+            return RunOutcome(
+                status=RunStatus.PARTIAL,
+                items_attempted=len(all_records),
+                items_succeeded=len(all_records),
+            )
         status = RunStatus.PARTIAL if (fetch_errors > 0 or self.should_stop()) else RunStatus.OK
         return RunOutcome(
             status=status,

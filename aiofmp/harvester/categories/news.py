@@ -6,6 +6,7 @@ import logging
 from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
+from aiofmp.base import FMPPaywallError
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig
@@ -40,23 +41,42 @@ class NewsHarvester(CategoryHarvester):
         from_date = today - timedelta(days=self._backfill_days)
         attempted = 0
         succeeded = 0
+        paywall_short_circuit = False
         _MAX_PAGES = 10  # safety cap
         for v in self._variants:
             if self.should_stop():
                 break
             attempted += 1
             method = getattr(self._cached.news, v)
-            try:
-                for page in range(_MAX_PAGES):
+            variant_ok = True
+            for page in range(_MAX_PAGES):
+                try:
                     batch = await method(
                         page=page, limit=self._page_size, from_date=from_date, to_date=today
                     )
-                    if not batch:
-                        break
+                except FMPPaywallError as exc:
+                    if self.note_paywall():
+                        logger.warning(
+                            "%s: %d consecutive paywalls; short-circuiting cycle. "
+                            "Last failure: %s page %d: %s",
+                            self.name, self.PAYWALL_THRESHOLD, v, page, exc,
+                        )
+                        paywall_short_circuit = True
+                    variant_ok = False
+                    break
+                except Exception as exc:
+                    logger.warning("news.%s failed: %s", v, exc)
+                    variant_ok = False
+                    break
+                else:
+                    self.note_success()
+                if not batch:
+                    break
+            if variant_ok:
                 succeeded += 1
-            except Exception as exc:
-                logger.warning("news.%s failed: %s", v, exc)
-        if self.should_stop():
+            if paywall_short_circuit:
+                break
+        if paywall_short_circuit or self.should_stop():
             return RunOutcome(
                 status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
             )

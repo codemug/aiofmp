@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from aiofmp.base import FMPPaywallError
 from aiofmp.cachedclient.snapshot_store import SnapshotStore
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
@@ -43,6 +44,7 @@ class DcfHarvester(CategoryHarvester):
         symbols = await self._catalog.symbols("financial_symbols")
         attempted = 0
         succeeded = 0
+        paywall_short_circuit = False
         for symbol in symbols:
             if self.should_stop():
                 break
@@ -55,10 +57,23 @@ class DcfHarvester(CategoryHarvester):
                     payload = rows[0] if isinstance(rows, list) and rows else None
                     if payload:
                         await self._snapshots.write(endpoint, symbol, payload)
-                    succeeded += 1
+                except FMPPaywallError as exc:
+                    if self.note_paywall():
+                        logger.warning(
+                            "%s: %d consecutive paywalls; short-circuiting cycle. "
+                            "Last failure: %s/%s: %s",
+                            self.name, self.PAYWALL_THRESHOLD, method_name, symbol, exc,
+                        )
+                        paywall_short_circuit = True
+                        break
                 except Exception as exc:
                     logger.warning("dcf.%s(%s) failed: %s", method_name, symbol, exc)
-        if self.should_stop():
+                else:
+                    self.note_success()
+                    succeeded += 1
+            if paywall_short_circuit:
+                break
+        if paywall_short_circuit or self.should_stop():
             return RunOutcome(
                 status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
             )

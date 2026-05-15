@@ -6,6 +6,7 @@ import logging
 from datetime import date, timedelta
 from typing import TYPE_CHECKING, Any
 
+from aiofmp.base import FMPPaywallError
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig
@@ -49,6 +50,7 @@ class AnalystEstimatesHarvester(CategoryHarvester):
         symbols = await self._catalog.symbols("actively_trading")
         attempted = 0
         succeeded = 0
+        paywall_short_circuit = False
         for symbol in symbols:
             if self.should_stop():
                 break
@@ -56,7 +58,15 @@ class AnalystEstimatesHarvester(CategoryHarvester):
                 attempted += 1
                 try:
                     await self._walk_symbol(symbol, period)
-                    succeeded += 1
+                except FMPPaywallError as exc:
+                    if self.note_paywall():
+                        logger.warning(
+                            "%s: %d consecutive paywalls; short-circuiting cycle. "
+                            "Last failure: %s/%s: %s",
+                            self.name, self.PAYWALL_THRESHOLD, symbol, period, exc,
+                        )
+                        paywall_short_circuit = True
+                        break
                 except Exception as exc:
                     logger.warning(
                         "analyst_estimates walk failed for %s/%s: %s",
@@ -64,7 +74,12 @@ class AnalystEstimatesHarvester(CategoryHarvester):
                         period,
                         exc,
                     )
-        if self.should_stop():
+                else:
+                    self.note_success()
+                    succeeded += 1
+            if paywall_short_circuit:
+                break
+        if paywall_short_circuit or self.should_stop():
             return RunOutcome(
                 status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
             )

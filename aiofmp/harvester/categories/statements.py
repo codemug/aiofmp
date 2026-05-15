@@ -6,7 +6,7 @@ import logging
 from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
-from aiofmp.base import current_harvest_category
+from aiofmp.base import FMPPaywallError, current_harvest_category
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig, parse_interval
@@ -141,6 +141,7 @@ class StatementsHarvester(CategoryHarvester):
             return RunOutcome(status=RunStatus.OK)
         attempted = 0
         succeeded = 0
+        paywall_short_circuit = False
         for symbol in symbols:
             if self.should_stop():
                 break
@@ -151,7 +152,16 @@ class StatementsHarvester(CategoryHarvester):
                     method = getattr(self._cached.statements, endpoint)
                     try:
                         await method(symbol, limit=limit, period=period)
-                        succeeded += 1
+                    except FMPPaywallError as exc:
+                        if self.note_paywall():
+                            logger.warning(
+                                "%s: %d consecutive paywalls; short-circuiting cycle. "
+                                "Last failure: %s/%s/%s: %s",
+                                self.name, self.PAYWALL_THRESHOLD,
+                                endpoint, symbol, period, exc,
+                            )
+                            paywall_short_circuit = True
+                            break
                     except Exception as exc:
                         logger.warning(
                             "statements.%s(%s, %s) failed: %s",
@@ -160,17 +170,37 @@ class StatementsHarvester(CategoryHarvester):
                             period,
                             exc,
                         )
+                    else:
+                        self.note_success()
+                        succeeded += 1
+                if paywall_short_circuit:
+                    break
+            if paywall_short_circuit:
+                break
             # limit-only endpoints (owner_earnings)
             for endpoint in LIMIT_ONLY_ENDPOINTS:
                 attempted += 1
                 method = getattr(self._cached.statements, endpoint)
                 try:
                     await method(symbol, limit=limit)
-                    succeeded += 1
+                except FMPPaywallError as exc:
+                    if self.note_paywall():
+                        logger.warning(
+                            "%s: %d consecutive paywalls; short-circuiting cycle. "
+                            "Last failure: %s/%s: %s",
+                            self.name, self.PAYWALL_THRESHOLD, endpoint, symbol, exc,
+                        )
+                        paywall_short_circuit = True
+                        break
                 except Exception as exc:
                     logger.warning(
                         "statements.%s(%s) failed: %s", endpoint, symbol, exc
                     )
+                else:
+                    self.note_success()
+                    succeeded += 1
+            if paywall_short_circuit:
+                break
             # period-only endpoints (segmentation)
             for endpoint in PERIOD_ONLY_ENDPOINTS:
                 for period in self._periods:
@@ -178,7 +208,16 @@ class StatementsHarvester(CategoryHarvester):
                     method = getattr(self._cached.statements, endpoint)
                     try:
                         await method(symbol, period=period)
-                        succeeded += 1
+                    except FMPPaywallError as exc:
+                        if self.note_paywall():
+                            logger.warning(
+                                "%s: %d consecutive paywalls; short-circuiting cycle. "
+                                "Last failure: %s/%s/%s: %s",
+                                self.name, self.PAYWALL_THRESHOLD,
+                                endpoint, symbol, period, exc,
+                            )
+                            paywall_short_circuit = True
+                            break
                     except Exception as exc:
                         logger.warning(
                             "statements.%s(%s, %s) failed: %s",
@@ -187,7 +226,14 @@ class StatementsHarvester(CategoryHarvester):
                             period,
                             exc,
                         )
-        if self.should_stop():
+                    else:
+                        self.note_success()
+                        succeeded += 1
+                if paywall_short_circuit:
+                    break
+            if paywall_short_circuit:
+                break
+        if paywall_short_circuit or self.should_stop():
             return RunOutcome(
                 status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
             )
