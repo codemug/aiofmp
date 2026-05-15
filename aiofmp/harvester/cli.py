@@ -18,6 +18,7 @@ from aiofmp.harvester.config import (
     load_config_from_yaml,
 )
 from aiofmp.harvester.manager import HarvesterManager
+from aiofmp.harvester.plan import get_plan_limits
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +49,18 @@ def _resolve_api_key(api_key_opt: str | None) -> str:
     return key
 
 
-def _build_cached_client(api_key: str) -> tuple[FmpClient, CachedClient]:
-    """Build a real FmpClient + CachedClient pair. Patched in tests."""
-    fmp = FmpClient(api_key=api_key)
+def _build_cached_client(
+    api_key: str, plan: str = "starter"
+) -> tuple[FmpClient, CachedClient]:
+    """Build a real FmpClient + CachedClient pair. Patched in tests.
+
+    ``plan`` selects the per-minute request cap from the FMP pricing matrix.
+    The resulting limiter paces all HTTP traffic — including user-driven
+    CachedClient calls — so we never exceed the plan rate even at full
+    parallel-category concurrency.
+    """
+    limits = get_plan_limits(plan)
+    fmp = FmpClient(api_key=api_key, requests_per_minute=limits.calls_per_minute)
     cached = CachedClient(fmp)
     return fmp, cached
 
@@ -75,7 +85,7 @@ async def _run_once(
     api_key: str,
     restrict_to: str | None,
 ) -> int:
-    fmp, cached = _build_cached_client(api_key)
+    fmp, cached = _build_cached_client(api_key, plan=cfg.plan)
     rc = 0
     async with cached:
         mgr = HarvesterManager(cfg, fmp_client=fmp, cached_client=cached)
@@ -102,7 +112,7 @@ async def _run_once(
 
 
 async def _run_forever(cfg: HarvestConfig, api_key: str) -> int:
-    fmp, cached = _build_cached_client(api_key)
+    fmp, cached = _build_cached_client(api_key, plan=cfg.plan)
     async with cached:
         mgr = HarvesterManager(cfg, fmp_client=fmp, cached_client=cached)
         await mgr.start()

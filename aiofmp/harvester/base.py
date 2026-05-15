@@ -41,6 +41,13 @@ class RunOutcome:
 class CategoryHarvester(abc.ABC):
     """Abstract base for one harvester category."""
 
+    #: Number of consecutive FMPPaywallError items before the cycle short-circuits.
+    #: Tunes how many wasted requests we spend "discovering" that the category is
+    #: entirely paywalled on the current plan. 5 is enough that one or two flaky
+    #: 402s on individual symbols don't trip it, but cheap when the whole
+    #: endpoint is paywalled.
+    PAYWALL_THRESHOLD: int = 5
+
     def __init__(
         self,
         name: str,
@@ -55,6 +62,7 @@ class CategoryHarvester(abc.ABC):
         self.budget = budget
         self.retry = retry
         self._stop_event: asyncio.Event | None = None
+        self._consecutive_paywalls: int = 0
 
     @abc.abstractmethod
     async def run_cycle(self) -> RunOutcome:
@@ -64,6 +72,25 @@ class CategoryHarvester(abc.ABC):
     def should_stop(self) -> bool:
         """True if the manager has requested shutdown. Subclasses should check this between iterations."""
         return self._stop_event is not None and self._stop_event.is_set()
+
+    def note_paywall(self) -> bool:
+        """Record a paywall (HTTP 402) for the current cycle.
+
+        Returns ``True`` once consecutive paywalls reach ``PAYWALL_THRESHOLD``,
+        signalling the per-item loop should short-circuit and the cycle should
+        end as ``PARTIAL``. Callers should reset the counter on success via
+        ``note_success()``.
+        """
+        self._consecutive_paywalls += 1
+        return self._consecutive_paywalls >= self.PAYWALL_THRESHOLD
+
+    def note_success(self) -> None:
+        """Reset the consecutive-paywall counter after a successful request."""
+        self._consecutive_paywalls = 0
+
+    def _reset_paywall_state(self) -> None:
+        """Reset paywall tracking at the start of each cycle."""
+        self._consecutive_paywalls = 0
 
     async def run_forever(self, stop_event: asyncio.Event) -> None:
         """Main loop: run a cycle each ``interval_seconds`` until stop_event fires."""
@@ -87,6 +114,11 @@ class CategoryHarvester(abc.ABC):
                 self.name, started, status=RunStatus.PAUSED_FOR_BUDGET
             )
             return
+
+        # Each cycle gets a fresh paywall counter — a category that was
+        # short-circuited last cycle gets a chance to retry (e.g. after a
+        # plan upgrade).
+        self._reset_paywall_state()
 
         token = current_harvest_category.set(self.name)
         try:

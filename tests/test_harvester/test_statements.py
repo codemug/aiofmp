@@ -32,6 +32,8 @@ def manager(tmp_path: Path) -> MagicMock:
     m.budget = BudgetTracker(m.state, BudgetConfig())
     m.config = MagicMock()
     m.config.retry = RetryConfig()
+    # Tests use Premium so quarterly is allowed (matches the period lists below).
+    m.config.plan = "premium"
     m.catalog = MagicMock()
     m.catalog.symbols = AsyncMock(return_value=["AAPL", "MSFT"])
     m.cached_client = MagicMock()

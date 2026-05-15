@@ -13,6 +13,7 @@ from aiofmp.harvester.base import CategoryHarvester
 from aiofmp.harvester.budget import BudgetTracker
 from aiofmp.harvester.catalog import SymbolCatalog
 from aiofmp.harvester.config import CategoryConfig, HarvestConfig
+from aiofmp.harvester.plan import get_plan_limits, is_us_symbol
 from aiofmp.harvester.state import StateStore
 
 logger = logging.getLogger(__name__)
@@ -34,8 +35,16 @@ class HarvesterManager:
         self.state.initialize()
 
         self.budget = BudgetTracker(self.state, config.budget)
+        # Plan-aware symbol filter: drop non-US symbols from every universe when
+        # the plan only covers US listings (Basic, Starter). On Premium/Ultimate
+        # this is None — all symbols pass through.
+        plan_limits = get_plan_limits(config.plan)
+        symbol_filter = is_us_symbol if plan_limits.us_only_coverage else None
         self.catalog = SymbolCatalog(
-            self.state, fmp_client, config.discovery.refresh_interval_seconds
+            self.state,
+            fmp_client,
+            config.discovery.refresh_interval_seconds,
+            symbol_filter=symbol_filter,
         )
 
         self._stop_event = asyncio.Event()

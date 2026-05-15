@@ -10,6 +10,7 @@ from aiofmp.base import FMPPaywallError, current_harvest_category
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig, parse_interval
+from aiofmp.harvester.plan import get_plan_limits
 from aiofmp.harvester.state import RunStatus
 
 if TYPE_CHECKING:
@@ -49,7 +50,17 @@ class StatementsHarvester(CategoryHarvester):
         )
         self._catalog = manager.catalog
         self._cached = manager.cached_client
-        self._periods: list[str] = list(cfg.extra.get("periods", ["annual", "quarter"]))
+        configured_periods = list(cfg.extra.get("periods", ["annual", "quarter"]))
+        # Plan-aware filter: Basic/Starter cannot fetch quarterly fundamentals.
+        # Strip 'quarter' from the configured list rather than 402-ing every call.
+        plan_limits = get_plan_limits(manager.config.plan)
+        if not plan_limits.has_quarterly_fundamentals and "quarter" in configured_periods:
+            logger.info(
+                "statements: dropping 'quarter' period (not included in plan %r)",
+                plan_limits.name,
+            )
+            configured_periods = [p for p in configured_periods if p != "quarter"]
+        self._periods: list[str] = configured_periods
         self._initial_limit = int(cfg.extra.get("initial_limit", 40))
         self._incremental_limit = int(cfg.extra.get("incremental_limit", 2))
         self._safety_net_seconds = parse_interval(

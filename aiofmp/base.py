@@ -8,6 +8,7 @@ including session management, rate limiting, and error handling.
 import asyncio
 import contextvars
 import logging
+import time
 from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlencode
@@ -53,9 +54,48 @@ class FMPServerError(FMPError):
     pass
 
 
+class FMPPaywallError(FMPError):
+    """Raised when the API returns HTTP 402 Payment Required.
+
+    Signals that the endpoint or specific resource (symbol, period, region) is
+    not included in the caller's plan. Permanent for the life of the plan —
+    callers should NOT retry and should treat it as "this endpoint is unavailable
+    until the plan is upgraded".
+    """
+
+    pass
+
+
 current_harvest_category: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "current_harvest_category", default=None
 )
+
+
+class _SlidingWindowRateLimiter:
+    """Paces requests so no more than ``max_per_minute`` go out per rolling minute.
+
+    Uses a deterministic interval (``60 / max_per_minute``) rather than a token
+    bucket: each ``acquire()`` returns at or after the next slot. This avoids
+    bursts and makes the per-minute cap a hard ceiling regardless of concurrency.
+    """
+
+    def __init__(self, max_per_minute: int) -> None:
+        if max_per_minute <= 0:
+            raise ValueError(f"max_per_minute must be positive, got {max_per_minute}")
+        self._interval = 60.0 / max_per_minute
+        self._next_slot = 0.0
+        self._lock = asyncio.Lock()
+
+    async def acquire(self) -> None:
+        async with self._lock:
+            now = time.monotonic()
+            wait = max(0.0, self._next_slot - now)
+            # Schedule the next slot relative to whichever is later: the previous
+            # slot we reserved or right now. Prevents the queue from "owing time"
+            # if there have been long idle periods.
+            self._next_slot = max(now, self._next_slot) + self._interval
+        if wait > 0:
+            await asyncio.sleep(wait)
 
 
 class FMPBaseClient:
@@ -69,6 +109,7 @@ class FMPBaseClient:
         max_retries: int = 3,
         retry_delay: float = 1.0,
         max_concurrent_requests: int = 10,
+        requests_per_minute: int | None = None,
     ):
         """
         Initialize the FMP base client
@@ -80,6 +121,11 @@ class FMPBaseClient:
             max_retries: Maximum number of retry attempts
             retry_delay: Base delay between retries (exponential backoff)
             max_concurrent_requests: Maximum concurrent requests allowed
+            requests_per_minute: Optional plan-level cap on requests per rolling
+                minute. When set, requests are paced via a sliding-window limiter
+                so the per-minute rate stays below the cap regardless of
+                concurrency. Default ``None`` disables pacing (server-side 429s
+                are the only ceiling).
         """
         if not api_key:
             raise ValueError("API key is required")
@@ -97,12 +143,23 @@ class FMPBaseClient:
 
         # Rate limiting
         self._request_semaphore = asyncio.Semaphore(max_concurrent_requests)
+        self._rate_limiter: _SlidingWindowRateLimiter | None = (
+            _SlidingWindowRateLimiter(requests_per_minute)
+            if requests_per_minute is not None
+            else None
+        )
 
         # Bandwidth callback
         self.on_response_size: Callable[[str | None, int], None] | None = None
 
         # Logging
         logger.info(f"FMP client initialized with base URL: {self.base_url}")
+        if self._rate_limiter is not None:
+            logger.info(
+                "Rate limiter active: %d requests/minute (%.0fms between requests)",
+                requests_per_minute,
+                60_000 / requests_per_minute,
+            )
 
     async def __aenter__(self):
         """Async context manager entry"""
@@ -168,6 +225,10 @@ class FMPBaseClient:
 
         async with self._request_semaphore:
             for attempt in range(self.max_retries + 1):
+                # Plan-level rate pacing happens INSIDE the retry loop so that
+                # a retried request also waits for its slot.
+                if self._rate_limiter is not None:
+                    await self._rate_limiter.acquire()
                 try:
                     if method.upper() == "GET":
                         async with self._session.get(
@@ -247,6 +308,10 @@ class FMPBaseClient:
 
         elif response.status == 401:
             raise FMPAuthenticationError("Invalid API key or authentication failed")
+        elif response.status == 402:
+            raise FMPPaywallError(
+                f"HTTP 402: endpoint or resource not included in current plan"
+            )
         elif response.status == 429:
             raise FMPRateLimitError("Rate limit exceeded")
         elif response.status >= 500:

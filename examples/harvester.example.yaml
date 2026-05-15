@@ -1,9 +1,22 @@
 # Example harvester config — copy to harvester.yaml and edit as needed.
-# Cap defaults assume FMP starter plan (20 GB/month).
+# Cap defaults assume FMP starter plan (20 GB/month, 300 calls/minute, US-only,
+# annual fundamentals only).
 
 state_dir: ~/.aiofmp/cache
 log_level: INFO
 shutdown_grace_seconds: 30           # SIGINT grace before cancelling tasks
+
+# FMP plan tier — controls per-minute rate limit, default symbol filter
+# (Basic/Starter drop non-US listings), and default fundamentals period
+# (Basic/Starter drop 'quarter'). Categories that hit ≥5 consecutive HTTP 402
+# paywalls short-circuit and log a one-line warning; consider disabling them
+# in the categories block below until you upgrade.
+#
+# Known paywalled categories on Starter: analyst_estimates, analyst_snapshots,
+# dcf, form13f, insider_trades, commodities_eod, indexes_eod (most non-US),
+# news.press_releases. They're left `enabled: true` here so the harvester will
+# discover-and-skip them; flip to `enabled: false` to silence them entirely.
+plan: starter                        # basic | starter | premium | ultimate
 
 budget:
   monthly_soft_cap_gb: 18

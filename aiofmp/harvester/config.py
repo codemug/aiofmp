@@ -99,6 +99,7 @@ class HarvestConfig:
     state_dir: str = "~/.aiofmp/cache"
     log_level: str = "INFO"
     shutdown_grace_seconds: int = 30
+    plan: str = "starter"  # basic | starter | premium | ultimate
     budget: BudgetConfig = field(default_factory=BudgetConfig)
     retry: RetryConfig = field(default_factory=RetryConfig)
     discovery: DiscoveryConfig = field(default_factory=DiscoveryConfig)
@@ -181,12 +182,20 @@ def load_config_from_yaml(path: str | Path) -> HarvestConfig:
     # Validate discovery interval early
     parse_interval(discovery.refresh_interval)
 
+    plan = str(raw.get("plan", defaults.plan)).lower()
+    # Validate plan early — surface bad config before we open any HTTP sessions.
+    # Import here to avoid a circular import at module load.
+    from aiofmp.harvester.plan import get_plan_limits
+
+    get_plan_limits(plan)
+
     return HarvestConfig(
         state_dir=str(raw.get("state_dir", defaults.state_dir)),
         log_level=str(raw.get("log_level", defaults.log_level)),
         shutdown_grace_seconds=int(
             raw.get("shutdown_grace_seconds", defaults.shutdown_grace_seconds)
         ),
+        plan=plan,
         budget=budget,
         retry=retry,
         discovery=discovery,

@@ -11,6 +11,7 @@ from .base import (
     FMPBaseClient,
     FMPBudgetError,
     FMPError,
+    FMPPaywallError,
     FMPRateLimitError,
     FMPResponseError,
     FMPServerError,
@@ -45,6 +46,7 @@ __all__ = [
     "FMPRateLimitError",
     "FMPResponseError",
     "FMPBudgetError",
+    "FMPPaywallError",
     "FMPServerError",
     "current_harvest_category",
 ]
