@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any
 
+from aiofmp.base import FMPPaywallError
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.budget import BudgetTracker
 from aiofmp.harvester.config import CategoryConfig, RetryConfig
@@ -60,6 +61,7 @@ class GapFillHarvester(CategoryHarvester):
 
         attempted = 0
         succeeded = 0
+        paywall_short_circuit = False
         for symbol in symbols:
             if self.should_stop():
                 break
@@ -68,6 +70,21 @@ class GapFillHarvester(CategoryHarvester):
                 try:
                     await self._call_target(target, symbol, from_date, today)
                     succeeded += 1
+                    self.note_success()
+                except FMPPaywallError as exc:
+                    if self.note_paywall():
+                        logger.warning(
+                            "%s: %d consecutive paywalls; short-circuiting cycle. "
+                            "Last failure: %s.%s(%s): %s",
+                            self.name,
+                            self.PAYWALL_THRESHOLD,
+                            target.category_attr,
+                            target.method_name,
+                            symbol,
+                            exc,
+                        )
+                        paywall_short_circuit = True
+                        break
                 except Exception as exc:
                     logger.warning(
                         "%s: %s.%s(%s) failed: %s",
@@ -77,10 +94,14 @@ class GapFillHarvester(CategoryHarvester):
                         symbol,
                         exc,
                     )
+            if paywall_short_circuit:
+                break
 
-        if self.should_stop():
+        if self.should_stop() or paywall_short_circuit:
             return RunOutcome(
-                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+                status=RunStatus.PARTIAL,
+                items_attempted=attempted,
+                items_succeeded=succeeded,
             )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(

@@ -10,12 +10,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
 from aiofmp.harvester.state import StateStore
 
 logger = logging.getLogger(__name__)
+
+#: Type alias for an optional per-row filter applied during universe refresh.
+SymbolFilter = Callable[[str], bool]
 
 # Maps universe name -> (fmp_client.<category>.<method>, ...)
 _UNIVERSE_SPECS: dict[str, tuple[str, str]] = {
@@ -30,11 +34,30 @@ _UNIVERSE_SPECS: dict[str, tuple[str, str]] = {
 
 class SymbolCatalog:
     def __init__(
-        self, store: StateStore, fmp_client: Any, refresh_interval_seconds: int
+        self,
+        store: StateStore,
+        fmp_client: Any,
+        refresh_interval_seconds: int,
+        *,
+        symbol_filter: SymbolFilter | None = None,
     ) -> None:
+        """Build a symbol-universe catalog.
+
+        Args:
+            store: SQLite store for cached symbols + refresh timestamps.
+            fmp_client: Underlying FmpClient used for discovery calls.
+            refresh_interval_seconds: Cache TTL for each universe.
+            symbol_filter: Optional predicate ``(symbol: str) -> bool`` applied
+                during refresh. Symbols for which it returns ``False`` are
+                dropped before persistence. Used by the harvester on Starter
+                plan to keep US-only listings (see
+                ``aiofmp.harvester.plan.is_us_symbol``). When ``None``, every
+                symbol returned by FMP is kept.
+        """
         self._store = store
         self._fmp = fmp_client
         self._refresh_seconds = refresh_interval_seconds
+        self._symbol_filter = symbol_filter
         self._locks: dict[str, asyncio.Lock] = {}
 
     def _lock(self, universe: str) -> asyncio.Lock:
@@ -73,13 +96,26 @@ class SymbolCatalog:
             )
             return
         rows: list[tuple[str, dict[str, Any]]] = []
+        dropped = 0
         for r in records:
             if not isinstance(r, dict):
                 continue
             symbol = r.get("symbol")
             if not symbol:
                 continue
-            rows.append((str(symbol), r))
+            symbol_s = str(symbol)
+            if self._symbol_filter is not None and not self._symbol_filter(symbol_s):
+                dropped += 1
+                continue
+            rows.append((symbol_s, r))
         self._store.replace_universe(universe, rows)
         self._store.set_last_refresh(universe, datetime.now(UTC))
-        logger.info("Universe %s refreshed: %d symbols", universe, len(rows))
+        if dropped:
+            logger.info(
+                "Universe %s refreshed: %d symbols (%d dropped by filter)",
+                universe,
+                len(rows),
+                dropped,
+            )
+        else:
+            logger.info("Universe %s refreshed: %d symbols", universe, len(rows))
