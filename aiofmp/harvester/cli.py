@@ -21,6 +21,22 @@ from aiofmp.harvester.manager import HarvesterManager
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_CONFIG_SEARCH_PATHS = ["./harvester.yaml", "~/.aiofmp/harvester.yaml"]
+
+
+def _resolve_config_path(config_path: str | None) -> str:
+    if config_path is not None:
+        return config_path
+    for candidate in DEFAULT_CONFIG_SEARCH_PATHS:
+        expanded = os.path.expanduser(candidate)
+        if Path(expanded).exists():
+            return expanded
+    click.echo(
+        f"error: --config not provided and no harvester.yaml found in {DEFAULT_CONFIG_SEARCH_PATHS}",
+        err=True,
+    )
+    sys.exit(2)
+
 
 def _resolve_api_key(api_key_opt: str | None) -> str:
     key = api_key_opt or os.environ.get("FMP_API_KEY")
@@ -102,8 +118,8 @@ async def _run_forever(cfg: HarvestConfig, api_key: str) -> int:
 @click.option(
     "--config",
     "config_path",
-    required=True,
-    type=click.Path(exists=True, dir_okay=False),
+    default=None,
+    type=click.Path(dir_okay=False),
 )
 @click.option(
     "--once", is_flag=True, help="Run each enabled category's next-due cycle and exit."
@@ -117,13 +133,14 @@ async def _run_forever(cfg: HarvestConfig, api_key: str) -> int:
 @click.option("--dry-run", is_flag=True, help="Print the plan; fetch nothing.")
 @click.option("--api-key", default=None, help="Override FMP_API_KEY env var.")
 def harvest(
-    config_path: str,
+    config_path: str | None,
     once: bool,
     category_name: str | None,
     dry_run: bool,
     api_key: str | None,
 ) -> None:
     """Run the aiofmp harvester."""
+    config_path = _resolve_config_path(config_path)
     cfg = load_config_from_yaml(config_path)
     logging.basicConfig(level=getattr(logging, cfg.log_level.upper(), logging.INFO))
 
@@ -144,11 +161,12 @@ def harvest(
 @click.option(
     "--config",
     "config_path",
-    required=True,
-    type=click.Path(exists=True, dir_okay=False),
+    default=None,
+    type=click.Path(dir_okay=False),
 )
-def harvest_status(config_path: str) -> None:
+def harvest_status(config_path: str | None) -> None:
     """Print a tabular summary of the harvester state store."""
+    config_path = _resolve_config_path(config_path)
     cfg = load_config_from_yaml(config_path)
     state_dir = Path(os.path.expanduser(cfg.state_dir))
     from aiofmp.harvester.state import StateStore

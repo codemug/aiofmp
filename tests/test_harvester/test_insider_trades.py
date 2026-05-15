@@ -113,3 +113,23 @@ class TestInsiderTrades:
         from aiofmp.harvester.categories import _REGISTRY
 
         assert "insider_trades" in _REGISTRY
+
+
+class TestInsiderTradesPartialPersist:
+    @pytest.mark.asyncio
+    async def test_mid_walk_failure_persists_earlier_pages(self, manager) -> None:
+        """When page N raises, pages 0..N-1 should still be persisted."""
+        manager.fmp_client.insider_trades.latest_insider_trades.side_effect = [
+            [_trade("AAPL", "2026-05-01")],
+            [_trade("MSFT", "2026-04-29")],
+            RuntimeError("network blip"),
+        ]
+        cfg = CategoryConfig(enabled=True, interval="6h", extra={"max_pages": 10, "page_size": 1})
+        h = build_insider_trades(cfg, manager)
+        outcome = await h.run_cycle()
+        # Pages 0 and 1 succeeded, page 2 raised
+        aapl = await manager.cached_client.storage.read(("insider-trading/latest", "AAPL"))
+        msft = await manager.cached_client.storage.read(("insider-trading/latest", "MSFT"))
+        assert len(aapl) == 1
+        assert len(msft) == 1
+        assert outcome.status == RunStatus.PARTIAL

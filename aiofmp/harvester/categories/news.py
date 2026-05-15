@@ -40,15 +40,19 @@ class NewsHarvester(CategoryHarvester):
         from_date = today - timedelta(days=self._backfill_days)
         attempted = 0
         succeeded = 0
+        _MAX_PAGES = 10  # safety cap
         for v in self._variants:
             if self.should_stop():
                 break
             attempted += 1
             method = getattr(self._cached.news, v)
             try:
-                await method(
-                    page=0, limit=self._page_size, from_date=from_date, to_date=today
-                )
+                for page in range(_MAX_PAGES):
+                    batch = await method(
+                        page=page, limit=self._page_size, from_date=from_date, to_date=today
+                    )
+                    if not batch:
+                        break
                 succeeded += 1
             except Exception as exc:
                 logger.warning("news.%s failed: %s", v, exc)

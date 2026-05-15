@@ -152,3 +152,31 @@ class TestHarvestStatusCli:
         assert result.exit_code == 0
         # Header should mention categories columns
         assert "category" in result.output.lower()
+
+
+class TestConfigFallback:
+    def test_uses_current_directory_default(self, env_with_key, runner, tmp_path, monkeypatch) -> None:
+        # chdir into a tmp dir that contains harvester.yaml
+        state = tmp_path / "state"
+        state.mkdir()
+        cfg = tmp_path / "harvester.yaml"
+        cfg.write_text(f"state_dir: {state}\ncategories:\n  news:\n    enabled: true\n    interval: 30m\n")
+        monkeypatch.chdir(tmp_path)
+        # No --config flag; should find ./harvester.yaml
+        result = runner.invoke(cli, ["harvest", "--dry-run"])
+        assert result.exit_code == 0, result.output
+        assert "news" in result.output
+
+    def test_errors_when_no_config_found(self, env_with_key, runner, tmp_path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        # No config file anywhere reachable; user's ~/.aiofmp/harvester.yaml may exist
+        # but for this test we should be lenient and just check that EXPLICITLY missing
+        # --config doesn't ImportError. If a default exists, this test asserts the no-error path.
+        # Simpler: skip this test if ~/.aiofmp/harvester.yaml happens to exist
+        import os
+        home_cfg = Path(os.path.expanduser("~/.aiofmp/harvester.yaml"))
+        if home_cfg.exists():
+            pytest.skip("home config exists; cannot test missing-config path")
+        result = runner.invoke(cli, ["harvest", "--dry-run"])
+        assert result.exit_code != 0
+        assert "harvester.yaml" in result.output.lower() or "config" in result.output.lower()
