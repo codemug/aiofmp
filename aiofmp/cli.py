@@ -18,7 +18,12 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@click.command()
+@click.group()
+def cli() -> None:
+    """aiofmp — Financial Modeling Prep async client toolkit."""
+
+
+@cli.command("mcp-server")
 @click.option(
     "--transport",
     type=click.Choice(["stdio", "http"]),
@@ -129,5 +134,12 @@ def mcp_server(
         sys.exit(1)
 
 
+from aiofmp.harvester.cli import harvest as _harvest_cmd
+from aiofmp.harvester.cli import harvest_status as _harvest_status_cmd
+
+cli.add_command(_harvest_cmd)
+cli.add_command(_harvest_status_cmd)
+
+
 if __name__ == "__main__":
-    mcp_server()
+    cli()
