@@ -354,6 +354,36 @@ uv run pytest tests/test_mcp_server.py::TestMCPServer -v
 aiofmp-mcp-server --log-level DEBUG
 ```
 
+### Harvester
+
+`aiofmp harvest` is a long-running CLI that proactively warms the local Parquet cache. It runs one async task per enabled category, each on its own configurable interval, and uses category-specific strategies to minimise redundant fetches (target: stay under 20 GB/month on FMP starter plan).
+
+**Quick start:**
+
+```bash
+cp examples/harvester.example.yaml ~/harvester.yaml
+export FMP_API_KEY=your_key_here
+
+# Print the plan, fetch nothing
+aiofmp harvest --config ~/harvester.yaml --dry-run
+
+# One cycle per enabled category, then exit
+aiofmp harvest --config ~/harvester.yaml --once
+
+# Run a single category once
+aiofmp harvest --config ~/harvester.yaml --once --category statements
+
+# Run forever (Ctrl-C to stop cleanly)
+aiofmp harvest --config ~/harvester.yaml
+
+# Inspect state
+aiofmp harvest-status --config ~/harvester.yaml
+```
+
+**State:** SQLite at `<state_dir>/harvester.sqlite` (checkpoints, bandwidth ledger, symbol catalogs). Parquet under `<state_dir>/cachedclient_data/`.
+
+See `docs/superpowers/specs/2026-05-15-harvester-v2-design.md` for the full design.
+
 ## Configuration
 
 ### Environment Variables
