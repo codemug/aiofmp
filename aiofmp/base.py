@@ -47,6 +47,12 @@ class FMPBudgetError(FMPError):
     pass
 
 
+class FMPServerError(FMPError):
+    """Raised when the API returns a 5xx server error response."""
+
+    pass
+
+
 current_harvest_category: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "current_harvest_category", default=None
 )
@@ -246,7 +252,7 @@ class FMPBaseClient:
         elif response.status == 429:
             raise FMPRateLimitError("Rate limit exceeded")
         elif response.status >= 500:
-            raise FMPError(f"Server error: {response.status}")
+            raise FMPServerError(f"Server error: {response.status}")
         else:
             raise FMPError(f"HTTP {response.status}: {response.reason}")
 

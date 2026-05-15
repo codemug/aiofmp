@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from aiofmp.base import (
     FMPBudgetError,
     FMPRateLimitError,
+    FMPServerError,
     current_harvest_category,
 )
 from aiofmp.harvester.budget import BudgetTracker
@@ -107,24 +108,49 @@ class CategoryHarvester(abc.ABC):
         )
 
     async def _run_cycle_with_retry(self) -> RunOutcome:
-        """Wrap a single run_cycle() with the retry/backoff policy for 429."""
-        policy: RetryPolicy = self.retry.on_429
-        last_exc: BaseException | None = None
-        for attempt in range(policy.max_attempts):
+        """Wrap a single run_cycle() with retry/backoff policy for 429 and 5xx."""
+        policy_429: RetryPolicy = self.retry.on_429
+        policy_5xx: RetryPolicy = self.retry.on_5xx
+        attempt_429 = 0
+        attempt_5xx = 0
+
+        while True:
             try:
                 return await self.run_cycle()
             except FMPRateLimitError as e:
-                last_exc = e
-                if attempt + 1 >= policy.max_attempts:
-                    break
-                delay = policy.backoff_seconds[
-                    min(attempt, len(policy.backoff_seconds) - 1)
+                attempt_429 += 1
+                if attempt_429 >= policy_429.max_attempts:
+                    return RunOutcome(
+                        status=RunStatus.PARTIAL,
+                        error=f"rate-limit retries exhausted: {e}",
+                    )
+                delay = policy_429.backoff_seconds[
+                    min(attempt_429 - 1, len(policy_429.backoff_seconds) - 1)
                 ]
                 logger.warning(
                     "%s hit 429 (attempt %d/%d); sleeping %ds",
                     self.name,
-                    attempt + 1,
-                    policy.max_attempts,
+                    attempt_429,
+                    policy_429.max_attempts,
+                    delay,
+                )
+                if delay > 0:
+                    await asyncio.sleep(delay)
+            except FMPServerError as e:
+                attempt_5xx += 1
+                if attempt_5xx >= policy_5xx.max_attempts:
+                    return RunOutcome(
+                        status=RunStatus.PARTIAL,
+                        error=f"server-error retries exhausted: {e}",
+                    )
+                delay = policy_5xx.backoff_seconds[
+                    min(attempt_5xx - 1, len(policy_5xx.backoff_seconds) - 1)
+                ]
+                logger.warning(
+                    "%s hit 5xx (attempt %d/%d); sleeping %ds",
+                    self.name,
+                    attempt_5xx,
+                    policy_5xx.max_attempts,
                     delay,
                 )
                 if delay > 0:
@@ -132,7 +158,3 @@ class CategoryHarvester(abc.ABC):
             except FMPBudgetError as e:
                 logger.warning("%s hit budget hard cap: %s", self.name, e)
                 return RunOutcome(status=RunStatus.PARTIAL, error=str(e))
-        return RunOutcome(
-            status=RunStatus.PARTIAL,
-            error=f"rate-limit retries exhausted: {last_exc}",
-        )

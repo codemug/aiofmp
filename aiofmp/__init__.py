@@ -13,6 +13,7 @@ from .base import (
     FMPError,
     FMPRateLimitError,
     FMPResponseError,
+    FMPServerError,
     current_harvest_category,
 )
 from .calendar import CalendarCategory
@@ -44,6 +45,7 @@ __all__ = [
     "FMPRateLimitError",
     "FMPResponseError",
     "FMPBudgetError",
+    "FMPServerError",
     "current_harvest_category",
 ]
 
