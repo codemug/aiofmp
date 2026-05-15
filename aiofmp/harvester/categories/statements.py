@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING
 
+from aiofmp.base import current_harvest_category
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.categories import register_category
 from aiofmp.harvester.config import CategoryConfig, parse_interval
@@ -58,16 +59,41 @@ class StatementsHarvester(CategoryHarvester):
     async def run_cycle(self) -> RunOutcome:
         today = date.today()
         if self._should_run_safety_net(today):
-            outcome = await self._run_safety_net(today)
-            # Mark the safety-net last-run in a separate scope
-            self.state.set_checkpoint(
-                "statements_safetynet", "global", today.isoformat()
-            )
-            # Also bump primary checkpoint so incremental window doesn't span both
-            self.state.set_checkpoint("statements", "global", today.isoformat())
-            return outcome
-
+            return await self._run_safety_net_with_row(today)
         return await self._run_incremental(today)
+
+    async def _run_safety_net_with_row(self, today: date) -> RunOutcome:
+        """Run the safety-net sweep, bookkept under the 'statements_safetynet' category row."""
+        started = datetime.now(UTC)
+        self.state.record_run_start("statements_safetynet", started)
+        token = current_harvest_category.set("statements_safetynet")
+        try:
+            outcome = await self._run_safety_net(today)
+        except Exception as e:
+            self.state.record_run_finish(
+                "statements_safetynet",
+                started,
+                status=RunStatus.ERROR,
+                error=f"{type(e).__name__}: {e}",
+            )
+            raise
+        finally:
+            current_harvest_category.reset(token)
+
+        self.state.record_run_finish(
+            "statements_safetynet",
+            started,
+            status=outcome.status,
+            items_attempted=outcome.items_attempted,
+            items_succeeded=outcome.items_succeeded,
+            bytes_estimate=outcome.bytes_estimate,
+            error=outcome.error,
+        )
+        # Always update the safety-net checkpoint so the next sweep fires safety_net_interval from now
+        self.state.set_checkpoint("statements_safetynet", "global", today.isoformat())
+        # Also bump the primary statements checkpoint so the incremental window doesn't span both
+        self.state.set_checkpoint("statements", "global", today.isoformat())
+        return outcome
 
     def _should_run_safety_net(self, today: date) -> bool:
         last = self.state.get_checkpoint("statements_safetynet", "global")
@@ -93,6 +119,8 @@ class StatementsHarvester(CategoryHarvester):
             symbols = await self._catalog.symbols("financial_symbols")
             outcome = await self._iterate_symbols(symbols, self._initial_limit)
             self.state.set_checkpoint("statements", "global", today.isoformat())
+            # Seed the safety-net checkpoint so the 30-day timer starts from today
+            self.state.set_checkpoint("statements_safetynet", "global", today.isoformat())
             return outcome
 
         try:
