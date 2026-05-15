@@ -42,7 +42,7 @@ class DirectoryCategory:
         """
         Get a list of companies with available financial statements
 
-        Endpoint: /financial-symbols-list
+        Endpoint: /financial-statement-symbol-list
 
         Returns:
             List of financial symbols with company names and currency information
@@ -51,7 +51,7 @@ class DirectoryCategory:
             >>> symbols = await client.directory.financial_symbols()
             >>> # Returns: [{"symbol": "6898.HK", "companyName": "China Aluminum Cans Holdings Limited", "tradingCurrency": "HKD", "reportingCurrency": "HKD"}, ...]
         """
-        return await self._client._make_request("financial-symbols-list")
+        return await self._client._make_request("financial-statement-symbol-list")
 
     async def etf_list(self) -> list[dict[str, Any]]:
         """

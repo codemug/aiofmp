@@ -64,7 +64,7 @@ class TestDirectoryCategory:
         result = await directory_category.financial_symbols()
 
         assert result == mock_response
-        mock_client._make_request.assert_called_once_with("financial-symbols-list")
+        mock_client._make_request.assert_called_once_with("financial-statement-symbol-list")
 
     @pytest.mark.asyncio
     async def test_etf_list(self, directory_category, mock_client):
@@ -232,4 +232,4 @@ class TestDirectoryCategory:
 
         assert result == mock_response
         assert result[0]["extraField"] == "should be preserved"
-        mock_client._make_request.assert_called_once_with("financial-symbols-list")
+        mock_client._make_request.assert_called_once_with("financial-statement-symbol-list")

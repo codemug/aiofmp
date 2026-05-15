@@ -198,14 +198,12 @@ class FMPBaseClient:
                         f"HTTP client error, attempt {attempt + 1}/{self.max_retries + 1}: {e}"
                     )
 
-                except Exception as e:
-                    if attempt == self.max_retries:
-                        raise e
-                    logger.warning(
-                        f"Request failed, attempt {attempt + 1}/{self.max_retries + 1}: {e}"
-                    )
-
-                # Wait before retry (except on last attempt)
+                # Wait before retry (except on last attempt).
+                # Only TimeoutError and aiohttp.ClientError reach here;
+                # FMP* exceptions (auth, paywall, not-found, response/parse,
+                # rate-limit, server-error, budget) propagate immediately so
+                # callers (including the harvester's _run_cycle_with_retry)
+                # can apply the right per-exception policy.
                 if attempt < self.max_retries:
                     await asyncio.sleep(
                         self.retry_delay * (2**attempt)
