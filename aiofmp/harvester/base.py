@@ -49,6 +49,14 @@ class CategoryHarvester(abc.ABC):
     #: stopping fast when the whole endpoint is paywalled.
     PAYWALL_THRESHOLD: int = 10
 
+    #: Seconds to remember a paywall short-circuit before re-probing. When
+    #: a cycle hits ``PAYWALL_THRESHOLD`` consecutive 402s, subsequent cycles
+    #: skip the category silently until this much time has passed. Default
+    #: 24h keeps daily-interval categories quiet for a day while still
+    #: re-probing once a day in case the user upgraded plans. In-memory only
+    #: (resets on process restart, which forces a re-probe at startup).
+    PAYWALL_REPROBE_SECONDS: int = 24 * 60 * 60
+
     def __init__(
         self,
         name: str,
@@ -64,6 +72,11 @@ class CategoryHarvester(abc.ABC):
         self.retry = retry
         self._stop_event: asyncio.Event | None = None
         self._consecutive_paywalls: int = 0
+        #: Set to ``now()`` each time the cycle short-circuits via PAYWALL.
+        #: While this is recent (within ``PAYWALL_REPROBE_SECONDS``) the
+        #: pre-cycle check skips the cycle entirely without making any
+        #: requests. In-memory only — restart re-probes.
+        self._paywalled_at: datetime | None = None
 
     @abc.abstractmethod
     async def run_cycle(self) -> RunOutcome:
@@ -80,18 +93,45 @@ class CategoryHarvester(abc.ABC):
         Returns ``True`` once consecutive paywalls reach ``PAYWALL_THRESHOLD``,
         signalling the per-item loop should short-circuit and the cycle should
         end as ``PARTIAL``. Callers should reset the counter on success via
-        ``note_success()``.
+        ``note_success()``. When the threshold trips we also remember the
+        timestamp so subsequent cycles can skip the category entirely until
+        ``PAYWALL_REPROBE_SECONDS`` elapses.
         """
         self._consecutive_paywalls += 1
-        return self._consecutive_paywalls >= self.PAYWALL_THRESHOLD
+        if self._consecutive_paywalls >= self.PAYWALL_THRESHOLD:
+            self._paywalled_at = datetime.now(UTC)
+            return True
+        return False
 
     def note_success(self) -> None:
-        """Reset the consecutive-paywall counter after a successful request."""
+        """Reset the consecutive-paywall counter after a successful request.
+
+        Also clears the paywall-memory marker — a successful call proves the
+        category is reachable again (e.g. plan was upgraded mid-process).
+        """
         self._consecutive_paywalls = 0
+        self._paywalled_at = None
 
     def _reset_paywall_state(self) -> None:
-        """Reset paywall tracking at the start of each cycle."""
+        """Reset paywall tracking at the start of each cycle.
+
+        Only clears the per-cycle consecutive counter — NOT the cross-cycle
+        ``_paywalled_at`` marker, which is what lets subsequent cycles skip
+        a known-paywalled category silently.
+        """
         self._consecutive_paywalls = 0
+
+    def _paywall_skip_remaining_seconds(self) -> int:
+        """How many seconds remain before the next paywall re-probe.
+
+        Returns 0 when no recent paywall is recorded or when the marker
+        is older than ``PAYWALL_REPROBE_SECONDS``.
+        """
+        if self._paywalled_at is None:
+            return 0
+        elapsed = (datetime.now(UTC) - self._paywalled_at).total_seconds()
+        remaining = self.PAYWALL_REPROBE_SECONDS - int(elapsed)
+        return max(0, remaining)
 
     async def run_forever(self, stop_event: asyncio.Event) -> None:
         """Main loop: run a cycle each ``interval_seconds`` until stop_event fires."""
@@ -107,6 +147,25 @@ class CategoryHarvester(abc.ABC):
     async def _run_once_and_record(self) -> None:
         """Run one cycle with state bookkeeping and budget checks."""
         started = datetime.now(UTC)
+
+        # If we recently learned this category is paywalled on the current
+        # plan (last cycle short-circuited via threshold), skip silently
+        # until the re-probe window elapses. Avoids 10 wasted requests per
+        # cycle for categories the user knows are paywalled.
+        skip_seconds = self._paywall_skip_remaining_seconds()
+        if skip_seconds > 0:
+            hours_left = skip_seconds // 3600
+            logger.info(
+                "Category %s skipped (paywalled; re-probe in ~%dh)",
+                self.name, max(1, hours_left),
+            )
+            self.state.record_run_start(self.name, started)
+            self.state.record_run_finish(
+                self.name, started, status=RunStatus.PAUSED_FOR_BUDGET,
+                error="paywalled (skipped pending re-probe)",
+            )
+            return
+
         self.state.record_run_start(self.name, started)
 
         if self.budget.is_paused(self.name):

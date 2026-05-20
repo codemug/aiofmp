@@ -239,6 +239,48 @@ class TestNotePaywallThreshold:
         h._reset_paywall_state()
         assert h.note_paywall() is False
 
+    def test_paywall_marker_set_when_threshold_trips(self, tmp_path) -> None:
+        from aiofmp.harvester.base import CategoryHarvester
+
+        h = self._make_harvester(tmp_path)
+        assert h._paywalled_at is None
+        for _ in range(CategoryHarvester.PAYWALL_THRESHOLD):
+            h.note_paywall()
+        # Marker is now set; next cycle should skip.
+        assert h._paywalled_at is not None
+        assert h._paywall_skip_remaining_seconds() > 0
+
+    def test_paywall_marker_not_set_below_threshold(self, tmp_path) -> None:
+        from aiofmp.harvester.base import CategoryHarvester
+
+        h = self._make_harvester(tmp_path)
+        for _ in range(CategoryHarvester.PAYWALL_THRESHOLD - 1):
+            h.note_paywall()
+        assert h._paywalled_at is None
+        assert h._paywall_skip_remaining_seconds() == 0
+
+    def test_paywall_marker_cleared_on_success(self, tmp_path) -> None:
+        from aiofmp.harvester.base import CategoryHarvester
+
+        h = self._make_harvester(tmp_path)
+        for _ in range(CategoryHarvester.PAYWALL_THRESHOLD):
+            h.note_paywall()
+        assert h._paywalled_at is not None
+        h.note_success()
+        assert h._paywalled_at is None
+        assert h._paywall_skip_remaining_seconds() == 0
+
+    def test_paywall_skip_window_expires(self, tmp_path) -> None:
+        from datetime import UTC, datetime, timedelta
+        from aiofmp.harvester.base import CategoryHarvester
+
+        h = self._make_harvester(tmp_path)
+        # Forge an old paywall marker — older than the re-probe window.
+        h._paywalled_at = datetime.now(UTC) - timedelta(
+            seconds=CategoryHarvester.PAYWALL_REPROBE_SECONDS + 1,
+        )
+        assert h._paywall_skip_remaining_seconds() == 0
+
 
 class TestRateLimiterPlumbedIntoFmpClient:
     @pytest.mark.asyncio
