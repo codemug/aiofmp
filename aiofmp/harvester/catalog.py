@@ -18,8 +18,11 @@ from aiofmp.harvester.state import StateStore
 
 logger = logging.getLogger(__name__)
 
-#: Type alias for an optional per-row filter applied during universe refresh.
-SymbolFilter = Callable[[str], bool]
+#: Type alias for an optional per-row filter applied during universe refresh
+#: and on every read. The first arg is the symbol; the second is the raw
+#: FMP payload dict (possibly ``{}`` if unavailable) so the filter can
+#: inspect richer fields like ``currency`` or ``exchange``.
+SymbolFilter = Callable[[str, dict[str, Any]], bool]
 
 # Maps universe name -> (fmp_client.<category>.<method>, ...)
 _UNIVERSE_SPECS: dict[str, tuple[str, str]] = {
@@ -71,14 +74,16 @@ class SymbolCatalog:
         async with self._lock(universe):
             if self._is_stale(universe):
                 await self._refresh(universe)
-            stored = self._store.list_symbols(universe)
-            # Apply the filter on every read so plan changes (e.g. running on
-            # Starter against an indexes universe that was first populated on
-            # a Premium key) take effect immediately, without waiting for the
-            # next catalog refresh. The filter is cheap and idempotent.
+            # Apply the filter on every read so plan changes take effect
+            # immediately, without waiting for the next catalog refresh.
+            # When a filter is set we load payloads too so it can use
+            # richer fields like ``currency`` (essential for the indexes
+            # universe, where symbol-only filtering misses non-US ones
+            # like ^AVFOCGRW).
             if self._symbol_filter is not None:
-                return [s for s in stored if self._symbol_filter(s)]
-            return stored
+                records = self._store.list_symbol_records(universe)
+                return [s for s, payload in records if self._symbol_filter(s, payload)]
+            return self._store.list_symbols(universe)
 
     def _is_stale(self, universe: str) -> bool:
         last = self._store.get_last_refresh(universe)
@@ -111,7 +116,7 @@ class SymbolCatalog:
             if not symbol:
                 continue
             symbol_s = str(symbol)
-            if self._symbol_filter is not None and not self._symbol_filter(symbol_s):
+            if self._symbol_filter is not None and not self._symbol_filter(symbol_s, r):
                 dropped += 1
                 continue
             rows.append((symbol_s, r))

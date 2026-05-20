@@ -248,6 +248,29 @@ class StateStore:
             ).fetchall()
             return [r["symbol"] for r in rows]
 
+    def list_symbol_records(
+        self, universe: str
+    ) -> list[tuple[str, dict[str, Any]]]:
+        """Like :meth:`list_symbols` but also returns the cached FMP payload
+        (parsed from ``payload_json``). Used by SymbolCatalog when the
+        read-time filter needs payload fields (e.g. ``currency``)."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT symbol, payload_json FROM symbol_catalog "
+                "WHERE universe = ? ORDER BY symbol",
+                (universe,),
+            ).fetchall()
+            out: list[tuple[str, dict[str, Any]]] = []
+            for r in rows:
+                try:
+                    payload = json.loads(r["payload_json"]) if r["payload_json"] else {}
+                except (json.JSONDecodeError, TypeError):
+                    payload = {}
+                if not isinstance(payload, dict):
+                    payload = {}
+                out.append((r["symbol"], payload))
+            return out
+
     def set_last_refresh(self, universe: str, when: datetime) -> None:
         with self._connect() as conn:
             conn.execute(

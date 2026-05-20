@@ -149,25 +149,39 @@ def get_plan_limits(name: str) -> PlanLimits:
     return PLAN_LIMITS[key]
 
 
-def is_us_symbol(symbol: str) -> bool:
+def is_us_symbol(symbol: str, payload: dict[str, Any] | None = None) -> bool:
     """Heuristic: True if ``symbol`` is plausibly a US-listed equity/ETF/index.
 
-    Used to filter ``actively_trading`` / ``financial_symbols`` universes
-    when ``us_only_coverage=True``. Rules:
+    Used to filter ``actively_trading`` / ``financial_symbols`` / ``indexes``
+    universes when ``us_only_coverage=True``.
+
+    When ``payload`` is provided (write/refresh time), uses the FMP-returned
+    metadata as the authoritative signal:
+      - ``currency`` (when present and not USD) → drop. This is the most
+        reliable signal for indexes, where the symbol heuristic alone is
+        insufficient — ``^AVFOCGRW``, ``^AFLI``, ``^AEX`` etc. have no
+        suffix dot but are non-US.
+
+    When ``payload`` is absent (read-time pass through stored symbols), or
+    when payload doesn't include a currency, falls back to a symbol-shape
+    heuristic:
       - Symbols containing ``.`` are foreign exchange suffixes (``.HK``,
         ``.SS``, ``.IS``, ``.JK``, ``.WA``, ``.SG``, etc.) → drop.
       - Symbols starting with ``0P`` are Morningstar mutual-fund identifiers
         for international funds → drop.
-      - Symbols starting with ``^`` are indexes; keep only those without ``.``.
-      - Everything else (``AAPL``, ``MSFT``, ``BRK-B``, ``GOOG.L`` — wait, dot drops
-        this; that's intentional, ``GOOG.L`` is the London listing) → keep.
+      - Everything else (``AAPL``, ``MSFT``, ``BRK-B``, ``^GSPC``, ``^DJI``)
+        is kept.
 
-    This is a heuristic, not a guarantee. Some non-US symbols slip through
-    (e.g. ADRs without an exchange suffix). Those will hit 402 on Starter and
-    be filtered out by the per-category paywall short-circuit.
+    Some non-US symbols still slip through (e.g. ADRs without an exchange
+    suffix). Those hit 402 on Starter and the per-category paywall
+    short-circuit catches them.
     """
     if not symbol:
         return False
+    if payload is not None:
+        currency = payload.get("currency")
+        if isinstance(currency, str) and currency.strip() and currency.upper() != "USD":
+            return False
     if "." in symbol:
         return False
     if symbol.startswith("0P"):
