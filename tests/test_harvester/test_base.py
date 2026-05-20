@@ -150,6 +150,44 @@ class TestCategoryHarvester:
         await asyncio.wait_for(task, timeout=2.0)
         assert h.run_count >= 1
 
+    @pytest.mark.asyncio
+    async def test_paywall_memory_skips_subsequent_cycle(
+        self, store: StateStore
+    ) -> None:
+        """After a cycle short-circuits via paywall, the next cycle should
+        skip silently without calling run_cycle() at all."""
+        from datetime import UTC, datetime
+
+        h = _make(store, "ok")
+        # Simulate a prior cycle having short-circuited via paywall right now.
+        h._paywalled_at = datetime.now(UTC)
+        await h._run_once_and_record()
+        # run_cycle() must NOT have been called this turn.
+        assert h.run_count == 0
+        latest = store.get_latest_run("fake")
+        assert latest is not None
+        assert latest.status == RunStatus.PAUSED_FOR_BUDGET
+        assert latest.error is not None and "paywalled" in latest.error
+
+    @pytest.mark.asyncio
+    async def test_paywall_memory_expires_after_window(
+        self, store: StateStore
+    ) -> None:
+        """Once the re-probe TTL elapses, the next cycle runs normally."""
+        from datetime import UTC, datetime, timedelta
+        from aiofmp.harvester.base import CategoryHarvester
+
+        h = _make(store, "ok")
+        h._paywalled_at = datetime.now(UTC) - timedelta(
+            seconds=CategoryHarvester.PAYWALL_REPROBE_SECONDS + 1,
+        )
+        await h._run_once_and_record()
+        # TTL elapsed → cycle runs normally.
+        assert h.run_count == 1
+        latest = store.get_latest_run("fake")
+        assert latest is not None
+        assert latest.status == RunStatus.OK
+
 
 class TestCooperativeCancellation:
     @pytest.mark.asyncio
