@@ -92,6 +92,24 @@ class TestIsUsSymbol:
     def test_us_symbols_kept(self, symbol: str) -> None:
         assert is_us_symbol(symbol) is True
 
+    def test_currency_usd_in_payload_keeps_symbol(self) -> None:
+        # Even when the symbol shape would normally pass, the currency
+        # field in the payload (when present) is the authoritative signal.
+        assert is_us_symbol("^GSPC", {"currency": "USD"}) is True
+
+    def test_non_usd_currency_drops_symbol(self) -> None:
+        # ^AVFOCGRW / ^AFLI / ^AEX etc. — symbol-only heuristic misses them
+        # (no dot, no 0P prefix) but the FMP record carries a non-USD currency.
+        assert is_us_symbol("^AVFOCGRW", {"currency": "GBP"}) is False
+        assert is_us_symbol("^AEX", {"currency": "EUR"}) is False
+        assert is_us_symbol("^N225", {"currency": "JPY"}) is False
+
+    def test_missing_currency_falls_back_to_symbol_heuristic(self) -> None:
+        # If payload lacks a usable currency, behave as if payload=None.
+        assert is_us_symbol("^GSPC", {}) is True
+        assert is_us_symbol("AAPL", {"currency": ""}) is True
+        assert is_us_symbol("6898.HK", {}) is False  # dot still kicks in
+
     @pytest.mark.parametrize(
         "symbol",
         [
