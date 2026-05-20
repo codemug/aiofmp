@@ -43,10 +43,11 @@ class CategoryHarvester(abc.ABC):
 
     #: Number of consecutive FMPPaywallError items before the cycle short-circuits.
     #: Tunes how many wasted requests we spend "discovering" that the category is
-    #: entirely paywalled on the current plan. 5 is enough that one or two flaky
-    #: 402s on individual symbols don't trip it, but cheap when the whole
-    #: endpoint is paywalled.
-    PAYWALL_THRESHOLD: int = 5
+    #: entirely paywalled on the current plan. 10 is enough to ride through a
+    #: paywalled alphabetical prefix in small universes (commodities ~40 syms,
+    #: where DXUSD/ESUSD/etc. are blocked but GCUSD/SIUSD work) while still
+    #: stopping fast when the whole endpoint is paywalled.
+    PAYWALL_THRESHOLD: int = 10
 
     def __init__(
         self,

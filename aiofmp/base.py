@@ -259,10 +259,28 @@ class FMPBaseClient:
                         f"HTTP client error, attempt {attempt + 1}/{self.max_retries + 1}: {e}"
                     )
 
+                except FMPRateLimitError as e:
+                    # Transparent 429 retry. Even with the sliding-window
+                    # limiter, FMP server-side counting can drift
+                    # (multiple keys, request-time vs receive-time, etc.)
+                    # so the occasional 429 still appears. Sleep a few
+                    # seconds and retry the SAME call; if it keeps firing
+                    # we let it propagate so the harvester's per-cycle
+                    # retry policy can decide.
+                    if attempt == self.max_retries:
+                        raise
+                    delay = 5 * (2**attempt)  # 5s, 10s, 20s
+                    logger.warning(
+                        "Rate limit hit, attempt %d/%d; sleeping %ds before retry",
+                        attempt + 1, self.max_retries + 1, delay,
+                    )
+                    await asyncio.sleep(delay)
+                    continue  # Skip the post-loop sleep; we already slept
+
                 # Wait before retry (except on last attempt).
                 # Only TimeoutError and aiohttp.ClientError reach here;
-                # FMP* exceptions (auth, paywall, not-found, response/parse,
-                # rate-limit, server-error, budget) propagate immediately so
+                # other FMP* exceptions (auth, paywall, not-found, response/
+                # parse, server-error, budget) propagate immediately so
                 # callers (including the harvester's _run_cycle_with_retry)
                 # can apply the right per-exception policy.
                 if attempt < self.max_retries:

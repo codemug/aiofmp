@@ -79,8 +79,12 @@ PLAN_LIMITS: dict[str, PlanLimits] = {
         quarterly_analyst_estimates_paywalled=True,
     ),
     "starter": PlanLimits(
+        # Live testing showed FMP server-side 429s firing under sustained
+        # 300 RPM (the documented cap). We pace at 250 RPM to leave a
+        # ~17% safety margin and absorb residual transient 429s via the
+        # retry inside _make_request.
         name="starter",
-        calls_per_minute=300,
+        calls_per_minute=250,
         monthly_bandwidth_gb=20,
         historical_years=5,
         us_only_coverage=True,
@@ -98,8 +102,9 @@ PLAN_LIMITS: dict[str, PlanLimits] = {
         quarterly_analyst_estimates_paywalled=True,
     ),
     "premium": PlanLimits(
+        # Same ~17% safety margin as Starter. FMP's documented cap is 750 RPM.
         name="premium",
-        calls_per_minute=750,
+        calls_per_minute=625,
         monthly_bandwidth_gb=50,
         historical_years=30,
         us_only_coverage=False,
@@ -109,8 +114,9 @@ PLAN_LIMITS: dict[str, PlanLimits] = {
         # will catch it if so.
     ),
     "ultimate": PlanLimits(
+        # Same ~17% safety margin. FMP's documented cap is 3000 RPM.
         name="ultimate",
-        calls_per_minute=3000,
+        calls_per_minute=2500,
         monthly_bandwidth_gb=150,
         historical_years=30,
         us_only_coverage=False,
