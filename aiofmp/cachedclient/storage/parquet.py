@@ -146,7 +146,33 @@ class ParquetStorage(StorageBackend):
         if not data_path.exists():
             return []
 
-        table = pq.read_table(data_path)
+        # Guard against zero-byte parquet files left by an interrupted/failed
+        # write (e.g. a 429 mid-flush, or a process kill between pq.write_table
+        # and fsync). Treat them as "nothing stored" so subsequent harvest
+        # cycles can re-populate, and clean up the stale file.
+        try:
+            if data_path.stat().st_size == 0:
+                logger.warning(
+                    "ParquetStorage: removing 0-byte parquet at %s (likely interrupted write)",
+                    data_path,
+                )
+                data_path.unlink(missing_ok=True)
+                return []
+        except OSError as e:
+            logger.warning("ParquetStorage: stat failed for %s: %s", data_path, e)
+            return []
+
+        try:
+            table = pq.read_table(data_path)
+        except Exception as e:
+            # Last-resort guard for any other corruption (truncated trailer,
+            # malformed footer). Same treatment: drop the file and refetch.
+            logger.warning(
+                "ParquetStorage: failed to read %s (%s); removing and refetching",
+                data_path, e,
+            )
+            data_path.unlink(missing_ok=True)
+            return []
         rows = table.to_pylist()
 
         if from_date is not None or to_date is not None:
@@ -178,7 +204,22 @@ class ParquetStorage(StorageBackend):
 
         safe_records = _sanitize_records_for_parquet(records)
         table = pa.Table.from_pylist(safe_records)
-        pq.write_table(table, data_path, compression="snappy")
+
+        # Write to a sibling .tmp file first, then atomically rename. This
+        # prevents the cache from ever observing a half-written or 0-byte
+        # parquet — a previous bug where mid-flush interruption left the
+        # final path corrupted and subsequent reads errored out.
+        tmp_path = data_path.with_suffix(data_path.suffix + ".tmp")
+        try:
+            pq.write_table(table, tmp_path, compression="snappy")
+            tmp_path.replace(data_path)
+        finally:
+            # If write_table raised before replace, clean up the partial tmp.
+            if tmp_path.exists():
+                try:
+                    tmp_path.unlink()
+                except OSError:
+                    pass
 
         _write_metadata(self._meta_path(key), records, date_field)
 

@@ -27,12 +27,15 @@ class TestGetPlanLimits:
         assert limits.calls_per_minute > 0
 
     def test_case_insensitive(self) -> None:
-        assert get_plan_limits("STARTER").calls_per_minute == 300
-        assert get_plan_limits("Premium").calls_per_minute == 750
+        # RPMs are paced ~17% below FMP's documented caps (300/750/3000) to
+        # absorb residual server-side 429s. Keep these as exact assertions so
+        # accidental drift gets caught.
+        assert get_plan_limits("STARTER").calls_per_minute == 250
+        assert get_plan_limits("Premium").calls_per_minute == 625
 
     def test_starter_caps(self) -> None:
         s = get_plan_limits("starter")
-        assert s.calls_per_minute == 300
+        assert s.calls_per_minute == 250
         assert s.monthly_bandwidth_gb == 20
         assert s.historical_years == 5
         assert s.us_only_coverage is True
@@ -46,7 +49,7 @@ class TestGetPlanLimits:
 
     def test_ultimate_caps(self) -> None:
         u = get_plan_limits("ultimate")
-        assert u.calls_per_minute == 3000
+        assert u.calls_per_minute == 2500
         assert u.historical_years == 30
         assert u.us_only_coverage is False
         # Ultimate has none of Starter's paywall restrictions.
@@ -189,21 +192,25 @@ class TestNotePaywallThreshold:
         retry = RetryConfig()
         return _NoopCategory("test", cfg, store, budget, retry)
 
-    def test_threshold_default_is_5(self, tmp_path) -> None:
+    def test_threshold_default(self, tmp_path) -> None:
+        from aiofmp.harvester.base import CategoryHarvester
+
         h = self._make_harvester(tmp_path)
-        # 4 paywalls — below threshold, returns False each time
-        for _ in range(4):
+        # (threshold - 1) paywalls stay below the line.
+        for _ in range(CategoryHarvester.PAYWALL_THRESHOLD - 1):
             assert h.note_paywall() is False
-        # 5th paywall trips the threshold
+        # One more trips it.
         assert h.note_paywall() is True
 
     def test_note_success_resets_counter(self, tmp_path) -> None:
+        from aiofmp.harvester.base import CategoryHarvester
+
         h = self._make_harvester(tmp_path)
-        for _ in range(4):
+        for _ in range(CategoryHarvester.PAYWALL_THRESHOLD - 1):
             h.note_paywall()
         h.note_success()
-        # After reset, takes 5 paywalls again to trip
-        for _ in range(4):
+        # After reset, takes the full threshold-count again to trip.
+        for _ in range(CategoryHarvester.PAYWALL_THRESHOLD - 1):
             assert h.note_paywall() is False
         assert h.note_paywall() is True
 
