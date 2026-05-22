@@ -24,45 +24,84 @@ _SAFE_INT_FOR_DOUBLE = 2**53
 def _sanitize_records_for_parquet(
     records: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Stringify columns whose values include ints outside the float64-safe range.
+    """Pre-process records so ``pa.Table.from_pylist`` accepts them.
 
-    pyarrow.Table.from_pylist infers ``double`` (float64) for any column that
-    contains a float, a None, or a mix of int and float values. float64 only
-    represents integers exactly up to 2^53. FMP occasionally returns
-    integers larger than that (giant market caps, junk growth metrics, etc.).
-    pyarrow then raises ``ArrowInvalid``.
+    Three classes of FMP-side data hazards are handled:
 
-    To preserve precision without forcing every consumer to pick a schema,
-    we stringify ALL values in any column where at least one value crosses
-    the threshold. Other columns are untouched. Records without unsafe
-    values are returned unchanged.
+    1. **Ints outside the float64-safe range** (``|x| > 2^53``).
+       ``pa.Table.from_pylist`` infers ``double`` for any numeric column
+       that includes a float or None. float64 only represents integers
+       exactly up to 2^53. Any such column gets stringified across all
+       rows so pyarrow stores it as a string column instead.
 
-    This is permissive on purpose: stringification is reversible by the
-    caller (``int(s)``), and rare on real data — most fields stay numeric.
+    2. **Mixed string + numeric across rows** in the same column.
+       This happens on **append**: a previous batch sanitized a column
+       to string (because of an unsafe int), the row got written to
+       parquet as string, then a fresh batch arrives with only normal
+       ints in that field. The merged record list has both strings and
+       ints, pyarrow infers string from the first non-null value, then
+       raises ``Expected bytes, got a 'int' object`` on the next row.
+       Detect this directly and stringify the whole column for
+       consistency.
+
+    3. **Empty struct (dict with no keys)**.
+       Some FMP endpoints (e.g. ``revenue_geographic_segmentation``)
+       return ``{"data": {}}`` for symbols with no breakdown. pyarrow
+       infers a struct type from the dict but has no fields to write,
+       raising ``Cannot write struct type 'X' with no child field to
+       Parquet``. Replace empty dicts with ``None`` so pyarrow can
+       still infer the struct shape from non-empty rows.
+
+    The original source list is never mutated. When no transformation
+    is needed (the common case), the input list is returned unchanged.
     """
     if not records:
         return records
 
-    bad_columns: set[str] = set()
+    type_set: dict[str, set[type]] = {}
+    has_unsafe_int: dict[str, bool] = {}
+    has_empty_dict: dict[str, bool] = {}
+
     for r in records:
         for k, v in r.items():
-            # bool is a subclass of int — exclude it explicitly.
+            if v is None:
+                continue
+            type_set.setdefault(k, set()).add(type(v))
             if (
                 isinstance(v, int)
                 and not isinstance(v, bool)
                 and abs(v) > _SAFE_INT_FOR_DOUBLE
             ):
-                bad_columns.add(k)
+                has_unsafe_int[k] = True
+            if isinstance(v, dict) and not v:
+                has_empty_dict[k] = True
 
-    if not bad_columns:
+    bad_columns: set[str] = set()
+    for col, types in type_set.items():
+        if has_unsafe_int.get(col):
+            bad_columns.add(col)
+            continue
+        # Mixed string + numeric (int and/or float, ignoring bool) → stringify.
+        has_str = str in types
+        has_num = int in types or float in types
+        if has_str and has_num:
+            bad_columns.add(col)
+
+    if not bad_columns and not has_empty_dict:
         return records
 
-    logger.debug(
-        "ParquetStorage: stringifying %d column(s) due to integers outside "
-        "IEEE 754 safe range (|x| > 2^53): %s",
-        len(bad_columns),
-        sorted(bad_columns),
-    )
+    if bad_columns:
+        logger.debug(
+            "ParquetStorage: stringifying %d column(s): %s",
+            len(bad_columns),
+            sorted(bad_columns),
+        )
+    if has_empty_dict:
+        logger.debug(
+            "ParquetStorage: nulling empty-dict values in %d column(s): %s",
+            len(has_empty_dict),
+            sorted(has_empty_dict),
+        )
 
     sanitized: list[dict[str, Any]] = []
     for r in records:
@@ -70,6 +109,9 @@ def _sanitize_records_for_parquet(
         for col in bad_columns:
             if col in new_r and new_r[col] is not None:
                 new_r[col] = str(new_r[col])
+        for col in has_empty_dict:
+            if col in new_r and isinstance(new_r[col], dict) and not new_r[col]:
+                new_r[col] = None
         sanitized.append(new_r)
     return sanitized
 

@@ -279,12 +279,31 @@ class FMPBaseClient:
                     await asyncio.sleep(delay)
                     continue  # Skip the post-loop sleep; we already slept
 
+                except FMPServerError as e:
+                    # Transparent 5xx retry. FMP returns 502/503/504 during
+                    # gateway hiccups; a quick retry usually succeeds.
+                    # Mirrors the 429 path but with shorter initial backoff
+                    # (gateway errors clear faster than rate limits).
+                    if attempt == self.max_retries:
+                        raise
+                    delay = 2 * (2**attempt)  # 2s, 4s, 8s
+                    logger.warning(
+                        "Server error %s, attempt %d/%d; sleeping %ds before retry",
+                        e,
+                        attempt + 1,
+                        self.max_retries + 1,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+
                 # Wait before retry (except on last attempt).
                 # Only TimeoutError and aiohttp.ClientError reach here;
                 # other FMP* exceptions (auth, paywall, not-found, response/
-                # parse, server-error, budget) propagate immediately so
-                # callers (including the harvester's _run_cycle_with_retry)
-                # can apply the right per-exception policy.
+                # parse, budget) propagate immediately so callers (including
+                # the harvester's _run_cycle_with_retry) can apply the right
+                # per-exception policy. 429 and 5xx have their own retry
+                # arms above.
                 if attempt < self.max_retries:
                     await asyncio.sleep(
                         self.retry_delay * (2**attempt)
