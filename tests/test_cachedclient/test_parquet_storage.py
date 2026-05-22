@@ -326,3 +326,133 @@ class TestSanitizeRecordsForParquet:
         assert read_back[0]["marketCap"] == "10124999524352000"
         # The float row got stringified too for type consistency.
         assert read_back[1]["marketCap"] == "9000000000000.5"
+
+    def test_mixed_str_and_int_column_stringifies(self):
+        # Reproduces the "Expected bytes, got a 'int' object" failure mode:
+        # a previous batch sanitized the column (stored as str), a new batch
+        # arrives with a normal int. Without intervention, pyarrow infers
+        # string from the first row and chokes on row 2.
+        records = [
+            {"date": "2026-04-30", "marketCap": "10124999524352000"},
+            {"date": "2026-04-29", "marketCap": 9_000_000},
+        ]
+        out = self._sanitize(records)
+        assert out[0]["marketCap"] == "10124999524352000"
+        assert out[1]["marketCap"] == "9000000"
+
+    def test_mixed_str_and_float_column_stringifies(self):
+        records = [
+            {"close": "1.234"},
+            {"close": 5.67},
+        ]
+        out = self._sanitize(records)
+        assert out[0]["close"] == "1.234"
+        assert out[1]["close"] == "5.67"
+
+    def test_mixed_int_and_float_column_unchanged_when_all_safe(self):
+        # int + float together without any unsafe int → pyarrow can handle it
+        # as double. No stringification needed.
+        records = [{"x": 5}, {"x": 5.5}]
+        assert self._sanitize(records) is records
+
+    def test_empty_dict_value_nulled_out(self):
+        # FMP's revenue_geographic_segmentation returns {"data": {}} for
+        # symbols with no breakdown. pyarrow can't write a struct with no
+        # fields; replace empties with None so the column infers from
+        # non-empty rows.
+        records = [
+            {"symbol": "COSM", "data": {}},
+            {"symbol": "AAPL", "data": {"US": 100, "EU": 50}},
+        ]
+        out = self._sanitize(records)
+        assert out[0]["data"] is None
+        assert out[1]["data"] == {"US": 100, "EU": 50}
+        # Source unchanged.
+        assert records[0]["data"] == {}
+
+    def test_all_empty_dicts_all_nulled(self):
+        records = [
+            {"symbol": "AAA", "data": {}},
+            {"symbol": "BBB", "data": {}},
+        ]
+        out = self._sanitize(records)
+        assert out[0]["data"] is None
+        assert out[1]["data"] is None
+
+    def test_populated_dict_unchanged(self):
+        records = [{"data": {"a": 1}}]
+        assert self._sanitize(records) is records
+
+    @pytest.mark.asyncio
+    async def test_write_succeeds_with_mixed_str_and_int_column(
+        self, storage: ParquetStorage
+    ):
+        """Reproduces the live ARHVF/BINI failure: a write where rows have
+        both pre-stringified values and new numeric values in the same
+        column. Without the sanitizer extension, pyarrow raises
+        'Expected bytes, got a 'int' object'."""
+        await storage.initialize()
+        records = [
+            {"symbol": "X", "date": "2026-01-02", "marketCap": "99999999999999999"},
+            {"symbol": "X", "date": "2026-01-03", "marketCap": 1000},
+            {"symbol": "X", "date": "2026-01-04", "marketCap": 2000.5},
+        ]
+        await storage.write(("chart-eod", "X"), records)
+        read = await storage.read(("chart-eod", "X"))
+        assert len(read) == 3
+        assert {r["marketCap"] for r in read} == {
+            "99999999999999999",
+            "1000",
+            "2000.5",
+        }
+
+    @pytest.mark.asyncio
+    async def test_write_succeeds_with_empty_struct_column(
+        self, storage: ParquetStorage
+    ):
+        """Reproduces the COSM/revenue_geographic_segmentation failure."""
+        await storage.initialize()
+        records = [
+            {"symbol": "COSM", "date": "2026-01-02", "data": {}},
+            {"symbol": "COSM", "date": "2026-01-03", "data": {"US": 100}},
+        ]
+        await storage.write(("seg", "COSM"), records)
+        read = await storage.read(("seg", "COSM"))
+        assert len(read) == 2
+        # Empty struct is now stored as None
+        empties = [r for r in read if r["data"] is None]
+        assert len(empties) == 1
+
+
+class TestFiveHundredRetry:
+    @pytest.mark.asyncio
+    async def test_5xx_then_ok_retries(self) -> None:
+        """A transient FMPServerError is retried transparently by _make_request."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from aiofmp.base import FMPBaseClient, FMPServerError
+
+        client = FMPBaseClient(api_key="test", max_retries=2, retry_delay=0.001)
+        # Bypass session check
+        client._session = MagicMock()
+        # First call: _handle_response raises FMPServerError. Second: returns data.
+        call_count = {"n": 0}
+
+        async def fake_handle(response):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                raise FMPServerError("Server error: 502")
+            return [{"ok": True}]
+
+        client._handle_response = fake_handle
+        # Fake session context manager
+        async_cm = MagicMock()
+        async_cm.__aenter__ = AsyncMock(return_value=MagicMock())
+        async_cm.__aexit__ = AsyncMock(return_value=None)
+        client._session.get = MagicMock(return_value=async_cm)
+
+        # Patch sleep so the 2s delay doesn't actually run
+        with patch("asyncio.sleep", new=AsyncMock(return_value=None)):
+            result = await client._make_request("anywhere")
+        assert result == [{"ok": True}]
+        assert call_count["n"] == 2  # one fail, one success
