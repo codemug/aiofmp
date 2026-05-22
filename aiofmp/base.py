@@ -259,7 +259,7 @@ class FMPBaseClient:
                         f"HTTP client error, attempt {attempt + 1}/{self.max_retries + 1}: {e}"
                     )
 
-                except FMPRateLimitError as e:
+                except FMPRateLimitError:
                     # Transparent 429 retry. Even with the sliding-window
                     # limiter, FMP server-side counting can drift
                     # (multiple keys, request-time vs receive-time, etc.)
@@ -272,7 +272,9 @@ class FMPBaseClient:
                     delay = 5 * (2**attempt)  # 5s, 10s, 20s
                     logger.warning(
                         "Rate limit hit, attempt %d/%d; sleeping %ds before retry",
-                        attempt + 1, self.max_retries + 1, delay,
+                        attempt + 1,
+                        self.max_retries + 1,
+                        delay,
                     )
                     await asyncio.sleep(delay)
                     continue  # Skip the post-loop sleep; we already slept
@@ -333,7 +335,7 @@ class FMPBaseClient:
             raise FMPAuthenticationError("Invalid API key or authentication failed")
         elif response.status == 402:
             raise FMPPaywallError(
-                f"HTTP 402: endpoint or resource not included in current plan"
+                "HTTP 402: endpoint or resource not included in current plan"
             )
         elif response.status == 429:
             raise FMPRateLimitError("Rate limit exceeded")

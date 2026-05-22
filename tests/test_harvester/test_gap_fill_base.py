@@ -177,8 +177,11 @@ class TestGapFillHarvester:
 
 class TestGapFillCancellation:
     @pytest.mark.asyncio
-    async def test_stops_between_symbols_when_event_set(self, store, cached_client) -> None:
+    async def test_stops_between_symbols_when_event_set(
+        self, store, cached_client
+    ) -> None:
         import asyncio as _asyncio
+
         from aiofmp.harvester.state import RunStatus
 
         # 4 symbols, but stop event fires after the first call
@@ -194,7 +197,9 @@ class TestGapFillCancellation:
 
         cached_client.chart.historical_price_full = AsyncMock(side_effect=maybe_stop)
 
-        h = make_harvester(store=store, catalog=catalog_with_many, cached_client=cached_client)
+        h = make_harvester(
+            store=store, catalog=catalog_with_many, cached_client=cached_client
+        )
         h._stop_event = stop_event
         outcome = await h.run_cycle()
 

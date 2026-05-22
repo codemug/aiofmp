@@ -108,9 +108,13 @@ class TestForm13FPartialPersist:
             [_filing("0001067983", "2026-05-01")],
             RuntimeError("blip"),
         ]
-        cfg = CategoryConfig(enabled=True, interval="24h", extra={"max_pages": 5, "page_size": 1})
+        cfg = CategoryConfig(
+            enabled=True, interval="24h", extra={"max_pages": 5, "page_size": 1}
+        )
         h = build_form13f(cfg, manager)
         outcome = await h.run_cycle()
-        berk = await manager.cached_client.storage.read(("institutional-ownership/latest", "0001067983"))
+        berk = await manager.cached_client.storage.read(
+            ("institutional-ownership/latest", "0001067983")
+        )
         assert len(berk) == 1
         assert outcome.status == RunStatus.PARTIAL

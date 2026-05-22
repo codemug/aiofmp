@@ -41,7 +41,8 @@ class NewsHarvester(CategoryHarvester):
         if blocked:
             logger.info(
                 "news (plan=%s): dropping paywalled variants %s",
-                plan_limits.name, blocked,
+                plan_limits.name,
+                blocked,
             )
             variants = [v for v in variants if v not in paywalled]
         self._variants = variants
@@ -64,14 +65,21 @@ class NewsHarvester(CategoryHarvester):
             for page in range(_MAX_PAGES):
                 try:
                     batch = await method(
-                        page=page, limit=self._page_size, from_date=from_date, to_date=today
+                        page=page,
+                        limit=self._page_size,
+                        from_date=from_date,
+                        to_date=today,
                     )
                 except FMPPaywallError as exc:
                     if self.note_paywall():
                         logger.warning(
                             "%s: %d consecutive paywalls; short-circuiting cycle. "
                             "Last failure: %s page %d: %s",
-                            self.name, self.PAYWALL_THRESHOLD, v, page, exc,
+                            self.name,
+                            self.PAYWALL_THRESHOLD,
+                            v,
+                            page,
+                            exc,
                         )
                         paywall_short_circuit = True
                     variant_ok = False
@@ -90,7 +98,9 @@ class NewsHarvester(CategoryHarvester):
                 break
         if paywall_short_circuit or self.should_stop():
             return RunOutcome(
-                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+                status=RunStatus.PARTIAL,
+                items_attempted=attempted,
+                items_succeeded=succeeded,
             )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(

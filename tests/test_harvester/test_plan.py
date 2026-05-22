@@ -13,7 +13,6 @@ from aiofmp.base import (
     _SlidingWindowRateLimiter,
 )
 from aiofmp.harvester.plan import (
-    PLAN_LIMITS,
     get_plan_limits,
     is_us_symbol,
 )
@@ -272,6 +271,7 @@ class TestNotePaywallThreshold:
 
     def test_paywall_skip_window_expires(self, tmp_path) -> None:
         from datetime import UTC, datetime, timedelta
+
         from aiofmp.harvester.base import CategoryHarvester
 
         h = self._make_harvester(tmp_path)
@@ -349,6 +349,7 @@ class TestSymbolCatalogReadSideFilter:
         )
         # Pretend it's fresh so .symbols() doesn't trigger a refresh.
         from datetime import UTC, datetime
+
         store.set_last_refresh("indexes", datetime.now(UTC))
 
         # Build a catalog with the US-only filter (Starter behaviour).
@@ -388,6 +389,7 @@ class TestSymbolCatalogReadSideFilter:
             ],
         )
         from datetime import UTC, datetime
+
         store.set_last_refresh("indexes", datetime.now(UTC))
 
         fake_fmp = MagicMock()

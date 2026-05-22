@@ -7,7 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from aiofmp.base import FMPBudgetError, FMPRateLimitError, FMPServerError, current_harvest_category
+from aiofmp.base import (
+    FMPBudgetError,
+    FMPRateLimitError,
+    FMPServerError,
+    current_harvest_category,
+)
 from aiofmp.harvester.base import CategoryHarvester, RunOutcome
 from aiofmp.harvester.budget import BudgetTracker
 from aiofmp.harvester.config import (
@@ -170,11 +175,10 @@ class TestCategoryHarvester:
         assert latest.error is not None and "paywalled" in latest.error
 
     @pytest.mark.asyncio
-    async def test_paywall_memory_expires_after_window(
-        self, store: StateStore
-    ) -> None:
+    async def test_paywall_memory_expires_after_window(self, store: StateStore) -> None:
         """Once the re-probe TTL elapses, the next cycle runs normally."""
         from datetime import UTC, datetime, timedelta
+
         from aiofmp.harvester.base import CategoryHarvester
 
         h = _make(store, "ok")
@@ -201,6 +205,7 @@ class TestCooperativeCancellation:
     @pytest.mark.asyncio
     async def test_should_stop_reflects_event_state(self, store: StateStore) -> None:
         import asyncio as _asyncio
+
         config = CategoryConfig(enabled=True, interval="1s", extra={})
         budget = BudgetTracker(store, BudgetConfig())
         retry = RetryConfig()
@@ -226,7 +231,9 @@ class TestServerErrorRetry:
                 self.calls += 1
                 if self.calls == 1:
                     raise FMPServerError("500")
-                return RunOutcome(status=RunStatus.OK, items_attempted=1, items_succeeded=1)
+                return RunOutcome(
+                    status=RunStatus.OK, items_attempted=1, items_succeeded=1
+                )
 
         cfg = CategoryConfig(enabled=True, interval="1s", extra={})
         retry = RetryConfig(

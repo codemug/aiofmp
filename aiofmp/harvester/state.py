@@ -248,9 +248,7 @@ class StateStore:
             ).fetchall()
             return [r["symbol"] for r in rows]
 
-    def list_symbol_records(
-        self, universe: str
-    ) -> list[tuple[str, dict[str, Any]]]:
+    def list_symbol_records(self, universe: str) -> list[tuple[str, dict[str, Any]]]:
         """Like :meth:`list_symbols` but also returns the cached FMP payload
         (parsed from ``payload_json``). Used by SymbolCatalog when the
         read-time filter needs payload fields (e.g. ``currency``)."""
