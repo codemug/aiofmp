@@ -169,7 +169,8 @@ class ParquetStorage(StorageBackend):
             # malformed footer). Same treatment: drop the file and refetch.
             logger.warning(
                 "ParquetStorage: failed to read %s (%s); removing and refetching",
-                data_path, e,
+                data_path,
+                e,
             )
             data_path.unlink(missing_ok=True)
             return []

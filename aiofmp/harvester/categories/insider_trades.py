@@ -59,7 +59,10 @@ class InsiderTradesHarvester(CategoryHarvester):
                     logger.warning(
                         "%s: %d consecutive paywalls; short-circuiting cycle. "
                         "Last failure: page %d: %s",
-                        self.name, self.PAYWALL_THRESHOLD, page, exc,
+                        self.name,
+                        self.PAYWALL_THRESHOLD,
+                        page,
+                        exc,
                     )
                     paywall_short_circuit = True
                     break
@@ -94,7 +97,11 @@ class InsiderTradesHarvester(CategoryHarvester):
                 items_attempted=len(all_records),
                 items_succeeded=len(all_records),
             )
-        status = RunStatus.PARTIAL if (fetch_errors > 0 or self.should_stop()) else RunStatus.OK
+        status = (
+            RunStatus.PARTIAL
+            if (fetch_errors > 0 or self.should_stop())
+            else RunStatus.OK
+        )
         return RunOutcome(
             status=status,
             items_attempted=len(all_records) + fetch_errors,

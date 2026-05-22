@@ -135,7 +135,9 @@ class StatementsHarvester(CategoryHarvester):
             outcome = await self._iterate_symbols(symbols, self._initial_limit)
             self.state.set_checkpoint("statements", "global", today.isoformat())
             # Seed the safety-net checkpoint so the 30-day timer starts from today
-            self.state.set_checkpoint("statements_safetynet", "global", today.isoformat())
+            self.state.set_checkpoint(
+                "statements_safetynet", "global", today.isoformat()
+            )
             return outcome
 
         try:
@@ -166,10 +168,7 @@ class StatementsHarvester(CategoryHarvester):
                     # Skip endpoints we know are paywalled for this period
                     # on the current plan (e.g. Starter blocks
                     # period=quarter for key_metrics/ratios).
-                    if (
-                        period == "quarter"
-                        and endpoint in self._quarterly_paywalled
-                    ):
+                    if period == "quarter" and endpoint in self._quarterly_paywalled:
                         continue
                     attempted += 1
                     method = getattr(self._cached.statements, endpoint)
@@ -180,8 +179,12 @@ class StatementsHarvester(CategoryHarvester):
                             logger.warning(
                                 "%s: %d consecutive paywalls; short-circuiting cycle. "
                                 "Last failure: %s/%s/%s: %s",
-                                self.name, self.PAYWALL_THRESHOLD,
-                                endpoint, symbol, period, exc,
+                                self.name,
+                                self.PAYWALL_THRESHOLD,
+                                endpoint,
+                                symbol,
+                                period,
+                                exc,
                             )
                             paywall_short_circuit = True
                             break
@@ -211,7 +214,11 @@ class StatementsHarvester(CategoryHarvester):
                         logger.warning(
                             "%s: %d consecutive paywalls; short-circuiting cycle. "
                             "Last failure: %s/%s: %s",
-                            self.name, self.PAYWALL_THRESHOLD, endpoint, symbol, exc,
+                            self.name,
+                            self.PAYWALL_THRESHOLD,
+                            endpoint,
+                            symbol,
+                            exc,
                         )
                         paywall_short_circuit = True
                         break
@@ -227,10 +234,7 @@ class StatementsHarvester(CategoryHarvester):
             # period-only endpoints (segmentation)
             for endpoint in PERIOD_ONLY_ENDPOINTS:
                 for period in self._periods:
-                    if (
-                        period == "quarter"
-                        and endpoint in self._quarterly_paywalled
-                    ):
+                    if period == "quarter" and endpoint in self._quarterly_paywalled:
                         continue
                     attempted += 1
                     method = getattr(self._cached.statements, endpoint)
@@ -241,8 +245,12 @@ class StatementsHarvester(CategoryHarvester):
                             logger.warning(
                                 "%s: %d consecutive paywalls; short-circuiting cycle. "
                                 "Last failure: %s/%s/%s: %s",
-                                self.name, self.PAYWALL_THRESHOLD,
-                                endpoint, symbol, period, exc,
+                                self.name,
+                                self.PAYWALL_THRESHOLD,
+                                endpoint,
+                                symbol,
+                                period,
+                                exc,
                             )
                             paywall_short_circuit = True
                             break
@@ -263,7 +271,9 @@ class StatementsHarvester(CategoryHarvester):
                 break
         if paywall_short_circuit or self.should_stop():
             return RunOutcome(
-                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+                status=RunStatus.PARTIAL,
+                items_attempted=attempted,
+                items_succeeded=succeeded,
             )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(

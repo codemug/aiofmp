@@ -157,11 +157,14 @@ class CategoryHarvester(abc.ABC):
             hours_left = skip_seconds // 3600
             logger.info(
                 "Category %s skipped (paywalled; re-probe in ~%dh)",
-                self.name, max(1, hours_left),
+                self.name,
+                max(1, hours_left),
             )
             self.state.record_run_start(self.name, started)
             self.state.record_run_finish(
-                self.name, started, status=RunStatus.PAUSED_FOR_BUDGET,
+                self.name,
+                started,
+                status=RunStatus.PAUSED_FOR_BUDGET,
                 error="paywalled (skipped pending re-probe)",
             )
             return

@@ -182,7 +182,9 @@ class TestStatementsSafetyNet:
 
 class TestStatementsSafetyNetSeeding:
     @pytest.mark.asyncio
-    async def test_first_run_seeds_safetynet_checkpoint(self, manager: MagicMock) -> None:
+    async def test_first_run_seeds_safetynet_checkpoint(
+        self, manager: MagicMock
+    ) -> None:
         """After a first incremental run, the statements_safetynet checkpoint must be set
         so the 30-day timer starts."""
         cfg = CategoryConfig(enabled=True, interval="6h", extra={"periods": ["annual"]})
@@ -193,7 +195,9 @@ class TestStatementsSafetyNetSeeding:
         assert sn is not None  # safety-net timer started
 
     @pytest.mark.asyncio
-    async def test_safetynet_run_uses_separate_category_row(self, manager: MagicMock) -> None:
+    async def test_safetynet_run_uses_separate_category_row(
+        self, manager: MagicMock
+    ) -> None:
         """When the safety-net fires, the category_runs row is under 'statements_safetynet'."""
         manager.state.set_checkpoint(
             "statements_safetynet",
@@ -201,9 +205,14 @@ class TestStatementsSafetyNetSeeding:
             (datetime.now(UTC) - timedelta(days=40)).date().isoformat(),
         )
         manager.state.set_checkpoint("statements", "global", "2026-05-10")
-        cfg = CategoryConfig(enabled=True, interval="6h", extra={
-            "periods": ["annual"], "safety_net_interval": "30d",
-        })
+        cfg = CategoryConfig(
+            enabled=True,
+            interval="6h",
+            extra={
+                "periods": ["annual"],
+                "safety_net_interval": "30d",
+            },
+        )
         h = build_statements(cfg, manager)
         await h._run_once_and_record()
 

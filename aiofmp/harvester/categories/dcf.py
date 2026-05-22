@@ -62,7 +62,11 @@ class DcfHarvester(CategoryHarvester):
                         logger.warning(
                             "%s: %d consecutive paywalls; short-circuiting cycle. "
                             "Last failure: %s/%s: %s",
-                            self.name, self.PAYWALL_THRESHOLD, method_name, symbol, exc,
+                            self.name,
+                            self.PAYWALL_THRESHOLD,
+                            method_name,
+                            symbol,
+                            exc,
                         )
                         paywall_short_circuit = True
                         break
@@ -75,7 +79,9 @@ class DcfHarvester(CategoryHarvester):
                 break
         if paywall_short_circuit or self.should_stop():
             return RunOutcome(
-                status=RunStatus.PARTIAL, items_attempted=attempted, items_succeeded=succeeded
+                status=RunStatus.PARTIAL,
+                items_attempted=attempted,
+                items_succeeded=succeeded,
             )
         status = RunStatus.OK if succeeded == attempted else RunStatus.PARTIAL
         return RunOutcome(

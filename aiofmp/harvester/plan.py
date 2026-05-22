@@ -24,6 +24,7 @@ when FMP changes their tiers.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -143,9 +144,7 @@ def get_plan_limits(name: str) -> PlanLimits:
     """Return the capability snapshot for ``name`` or raise ``ValueError``."""
     key = name.lower()
     if key not in PLAN_LIMITS:
-        raise ValueError(
-            f"unknown plan {name!r}; valid plans: {sorted(PLAN_LIMITS)}"
-        )
+        raise ValueError(f"unknown plan {name!r}; valid plans: {sorted(PLAN_LIMITS)}")
     return PLAN_LIMITS[key]
 
 

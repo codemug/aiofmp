@@ -47,7 +47,9 @@ def _build_intraday(
     if blocked:
         logger.info(
             "%s (plan=%s): dropping paywalled timeframes %s",
-            name, plan_limits.name, blocked,
+            name,
+            plan_limits.name,
+            blocked,
         )
         timeframes = [tf for tf in timeframes if tf not in paywalled]
     backfill_days = int(cfg.extra.get("backfill_days", 30))
