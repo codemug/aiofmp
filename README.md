@@ -182,6 +182,39 @@ aiofmp-mcp-server --cached
 
 When `--cached` is enabled, the MCP server uses `CachedClient` under the hood. Time-series API calls are cached locally in Parquet files so repeated queries for the same historical data don't consume API quota. Cache directory defaults to `~/.aiofmp/cache` (override with `AIOFMP_CACHE_FILE_PATH`).
 
+#### Selective Tool Registration
+
+By default the server exposes 177 tools across 22 categories. To reduce the surface area an AI agent has to reason about, restrict which tools are registered using `--tools` (allowlist) and/or `--exclude-tools` (denylist). The spec grammar mixes category-level and per-tool selection:
+
+| Spec | Meaning |
+|---|---|
+| `chart` | all tools in the chart category |
+| `chart(*)` | same — explicit form |
+| `chart(get_intraday_1hour)` | just that one chart tool |
+| `chart(get_intraday_1hour,get_historical_price_full)` | exactly those chart tools |
+| `*` | every tool in every category (default) |
+
+A spec is a comma-separated list of these entries. When both flags are set, `--tools` defines the universe and `--exclude-tools` prunes from it.
+
+```bash
+# Only chart, quote, and search are visible to the AI
+aiofmp-mcp-server --tools "chart(*),quote(*),search(*)"
+
+# A single tool from quote, all of search
+aiofmp-mcp-server --tools "quote(get_stock_quote),search"
+
+# Everything except form13f, senate, and chart.get_intraday_1min
+aiofmp-mcp-server --exclude-tools "form13f,senate,chart(get_intraday_1min)"
+
+# Allowlist with a carve-out
+aiofmp-mcp-server --tools "chart(*),quote(*)" --exclude-tools "chart(get_intraday_1min)"
+
+# Discover available categories and tool names
+aiofmp-mcp-server --list-tools
+```
+
+Environment variable equivalents (useful for Claude Desktop configs): `AIOFMP_MCP_TOOLS` and `AIOFMP_MCP_EXCLUDE_TOOLS`. Invalid category or tool names fail fast at startup with the valid list printed.
+
 #### Claude Desktop Integration
 
 Add to your Claude Desktop configuration (`claude_desktop_config.json`):
@@ -237,6 +270,13 @@ aiofmp-mcp-server --text-content
 # Enable local caching
 aiofmp-mcp-server --cached
 
+# Restrict the tools that get registered
+aiofmp-mcp-server --tools "chart(*),quote(get_stock_quote),search"
+aiofmp-mcp-server --exclude-tools "form13f,senate"
+
+# List available categories and tools
+aiofmp-mcp-server --list-tools
+
 # All options
 aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO --api-key your_key --text-content --cached
 ```
@@ -249,6 +289,9 @@ aiofmp-mcp-server --transport http --host localhost --port 3000 --log-level INFO
 - `--api-key`: FMP API key (can also be set via `FMP_API_KEY` environment variable)
 - `--text-content`: Include text content alongside structured content in MCP tool responses (default: text content is empty when structured content is present)
 - `--cached`: Enable CachedClient to cache time-series data locally in Parquet files, minimizing API calls (default: off). Cache dir: `~/.aiofmp/cache` (override with `AIOFMP_CACHE_FILE_PATH`)
+- `--tools`: Restrict which MCP tools are registered. Spec syntax: `category` or `category(*)` for a whole category, `category(tool1,tool2)` for specific tools; comma-separated. Env: `AIOFMP_MCP_TOOLS`. Default: all tools.
+- `--exclude-tools`: Same syntax as `--tools`, but prunes from the include set. Env: `AIOFMP_MCP_EXCLUDE_TOOLS`.
+- `--list-tools`: Print available categories and tool names, then exit. Does not require `FMP_API_KEY`.
 
 ### Available API Categories
 
@@ -397,6 +440,8 @@ See `docs/superpowers/specs/2026-05-15-harvester-v2-design.md` for the full desi
 | `MCP_LOG_LEVEL` | Logging level | `INFO` | No |
 | `AIOFMP_CACHED` | Enable CachedClient (`true`/`false`) | `false` | No |
 | `AIOFMP_CACHE_FILE_PATH` | Cache directory for Parquet files | `~/.aiofmp/cache` | No |
+| `AIOFMP_MCP_TOOLS` | Restrict MCP tools (allowlist; same grammar as `--tools`) | unset | No |
+| `AIOFMP_MCP_EXCLUDE_TOOLS` | Prune MCP tools (denylist; same grammar as `--exclude-tools`) | unset | No |
 
 ### MCP Server Modes
 
