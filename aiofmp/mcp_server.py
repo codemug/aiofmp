@@ -6,11 +6,18 @@ exposing all FMP API endpoints as MCP tools for use with AI assistants.
 """
 
 import asyncio
+import importlib
 import logging
 import os
 import sys
 
 from fastmcp import FastMCP
+
+from .mcp_selection import (
+    compute_selection,
+    get_tool_inventory,
+    parse_spec,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,36 +27,63 @@ logger = logging.getLogger(__name__)
 mcp = FastMCP("FMP MCP Server")
 
 
-def register_tools():
-    """Register all MCP tools from the various modules."""
-    try:
-        # Import and register tools from each category
-        from . import (  # noqa: F401
-            analyst_tools,
-            calendar_tools,
-            chart_tools,
-            commodity_tools,
-            company_tools,
-            cot_tools,
-            crypto_tools,
-            dcf_tools,
-            directory_tools,
-            economics_tools,
-            etf_tools,
-            forex_tools,
-            form13f_tools,
-            indexes_tools,
-            insider_trades_tools,
-            market_performance_tools,
-            news_tools,
-            quote_tools,
-            search_tools,
-            senate_tools,
-            statements_tools,
-            technical_indicators_tools,
-        )
+def _resolve_selection_from_env() -> dict[str, frozenset[str]]:
+    """Read ``AIOFMP_MCP_TOOLS`` / ``AIOFMP_MCP_EXCLUDE_TOOLS`` and resolve.
 
-        logger.info("Successfully registered all MCP tools")
+    Returns the per-category allow-set the registrar should honor. Empty env
+    vars mean "no restriction on this side".
+    """
+    inventory = get_tool_inventory()
+    include_spec = os.getenv("AIOFMP_MCP_TOOLS", "").strip()
+    exclude_spec = os.getenv("AIOFMP_MCP_EXCLUDE_TOOLS", "").strip()
+    include = parse_spec(include_spec, inventory) if include_spec else None
+    exclude = parse_spec(exclude_spec, inventory) if exclude_spec else None
+    return compute_selection(include, exclude, inventory)
+
+
+def register_tools(selection: dict[str, frozenset[str]] | None = None) -> None:
+    """Register MCP tools, optionally restricted to a per-category allow-set.
+
+    Args:
+        selection: ``{category: frozenset(tool_names)}`` of tools to keep. When
+            ``None``, the selection is resolved from the
+            ``AIOFMP_MCP_TOOLS`` / ``AIOFMP_MCP_EXCLUDE_TOOLS`` env vars, falling
+            back to "register everything" if neither is set.
+
+    Categories not present in ``selection`` are never imported. Within an
+    imported category, tools that aren't in the allow-set are removed via
+    ``mcp.remove_tool``.
+    """
+    inventory = get_tool_inventory()
+
+    if selection is None:
+        selection = _resolve_selection_from_env()
+
+    if not selection:
+        logger.warning(
+            "MCP tool selection is empty; no tools will be registered. "
+            "Check AIOFMP_MCP_TOOLS / AIOFMP_MCP_EXCLUDE_TOOLS."
+        )
+        return
+
+    try:
+        for cat in selection:
+            importlib.import_module(f"aiofmp.{cat}_tools")
+
+        kept = 0
+        removed = 0
+        for cat, allowed in selection.items():
+            for tool_name in inventory[cat] - allowed:
+                mcp.remove_tool(tool_name)
+                removed += 1
+            kept += len(allowed)
+
+        logger.info(
+            "Registered %d MCP tool(s) across %d categor(y/ies); pruned %d",
+            kept,
+            len(selection),
+            removed,
+        )
     except ImportError as e:
         logger.error(f"Failed to import tool modules: {e}")
         raise

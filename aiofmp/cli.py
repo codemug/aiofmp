@@ -58,6 +58,34 @@ def cli() -> None:
     default=False,
     help="Enable CachedClient: cache time-series data locally in Parquet files to minimize API calls. Cache dir defaults to ~/.aiofmp/cache (override with AIOFMP_CACHE_FILE_PATH).",
 )
+@click.option(
+    "--tools",
+    "tools_spec",
+    default=None,
+    help=(
+        "Restrict which MCP tools are registered. Spec syntax: "
+        "'category' or 'category(*)' for all tools in a category, "
+        "'category(tool1,tool2)' for specific tools, comma-separated. "
+        "Example: --tools 'chart(*),quote(get_stock_quote),search'. "
+        "Use --list-tools to discover names. Env: AIOFMP_MCP_TOOLS."
+    ),
+)
+@click.option(
+    "--exclude-tools",
+    "exclude_tools_spec",
+    default=None,
+    help=(
+        "Same syntax as --tools, but prunes from the include set. "
+        "Useful with or without --tools. Env: AIOFMP_MCP_EXCLUDE_TOOLS."
+    ),
+)
+@click.option(
+    "--list-tools",
+    "list_tools",
+    is_flag=True,
+    default=False,
+    help="Print available categories and tools, then exit.",
+)
 def mcp_server(
     transport: str,
     host: str,
@@ -66,6 +94,9 @@ def mcp_server(
     api_key: str | None,
     text_content: bool,
     cached: bool,
+    tools_spec: str | None,
+    exclude_tools_spec: str | None,
+    list_tools: bool,
 ):
     """
     Start the aiofmp MCP server.
@@ -94,6 +125,40 @@ def mcp_server(
     """
     # Set logging level
     logging.getLogger().setLevel(getattr(logging, log_level.upper()))
+
+    # --list-tools is a discovery short-circuit; no server start, no API key needed.
+    if list_tools:
+        from .mcp_selection import format_inventory
+
+        click.echo(format_inventory())
+        return
+
+    # Validate tool selection specs early so a bad CLI value errors out before
+    # we open any client sessions. We re-parse them inside register_tools(),
+    # but doing it here lets click report errors with proper exit codes.
+    if tools_spec is not None or exclude_tools_spec is not None:
+        from .mcp_selection import compute_selection, get_tool_inventory, parse_spec
+
+        inventory = get_tool_inventory()
+        try:
+            include = parse_spec(tools_spec, inventory) if tools_spec else None
+            exclude = (
+                parse_spec(exclude_tools_spec, inventory)
+                if exclude_tools_spec
+                else None
+            )
+            effective = compute_selection(include, exclude, inventory)
+        except ValueError as e:
+            raise click.UsageError(str(e)) from e
+        if not effective:
+            raise click.UsageError(
+                "Tool selection is empty after combining --tools and --exclude-tools; "
+                "no tools would be registered."
+            )
+        if tools_spec:
+            os.environ["AIOFMP_MCP_TOOLS"] = tools_spec
+        if exclude_tools_spec:
+            os.environ["AIOFMP_MCP_EXCLUDE_TOOLS"] = exclude_tools_spec
 
     # Set API key if provided
     if api_key:
