@@ -140,6 +140,15 @@ class FMPBaseClient:
         # Session management
         self._session: aiohttp.ClientSession | None = None
         self._session_owner = True
+        # Reference count of active start()/`async with` scopes. A shared
+        # client (e.g. the MCP server's global singleton) is entered
+        # concurrently by many in-flight requests, each wrapping its work in
+        # `async with client:`. Closing the session on the FIRST scope exit
+        # would tear it out from under the others ("Connector is closed",
+        # then a None session -> "'NoneType' object has no attribute 'get'").
+        # Instead we only close once the LAST concurrent scope exits.
+        self._session_refcount = 0
+        self._session_lock = asyncio.Lock()
 
         # Rate limiting
         self._request_semaphore = asyncio.Semaphore(max_concurrent_requests)
@@ -171,19 +180,40 @@ class FMPBaseClient:
         await self.close()
 
     async def start(self):
-        """Start the client session if not already started"""
-        if self._session is None:
-            timeout = aiohttp.ClientTimeout(total=self.timeout)
-            self._session = aiohttp.ClientSession(timeout=timeout)
-            self._session_owner = True
-            logger.debug("FMP client session started")
+        """Start the client session if not already started.
+
+        Reference-counted: concurrent ``async with client:`` scopes on a shared
+        client all share a single session. See :meth:`close`.
+        """
+        async with self._session_lock:
+            if self._session is None:
+                timeout = aiohttp.ClientTimeout(total=self.timeout)
+                self._session = aiohttp.ClientSession(timeout=timeout)
+                self._session_owner = True
+                logger.debug("FMP client session started")
+            # Count the scope only after a session is guaranteed to exist, so a
+            # failed session creation can't leak a reference (a raising
+            # __aenter__ means __aexit__/close() never runs to balance it).
+            self._session_refcount += 1
 
     async def close(self):
-        """Close the client session"""
-        if self._session_owner and self._session:
-            await self._session.close()
-            self._session = None
-            logger.debug("FMP client session closed")
+        """Close the client session once the last active scope exits.
+
+        Decrements the scope reference count and only tears down the
+        underlying session when it reaches zero, so overlapping requests on a
+        shared client keep a live session for the duration of their own scope.
+        """
+        async with self._session_lock:
+            if self._session_refcount > 0:
+                self._session_refcount -= 1
+            if (
+                self._session_refcount == 0
+                and self._session_owner
+                and self._session is not None
+            ):
+                await self._session.close()
+                self._session = None
+                logger.debug("FMP client session closed")
 
     async def _make_request(
         self, endpoint: str, params: dict[str, Any] | None = None, method: str = "GET"

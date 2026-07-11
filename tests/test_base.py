@@ -1,0 +1,100 @@
+"""
+Unit tests for FMPBaseClient session lifecycle.
+
+Regression coverage for the shared-session concurrency race: the MCP server
+reuses a single global client that many in-flight requests enter concurrently
+via ``async with client:``. The first scope to exit must NOT close the session
+out from under the others (which produced "Connector is closed" and
+"'NoneType' object has no attribute 'get'" in production).
+"""
+
+import asyncio
+from unittest.mock import patch
+
+import pytest
+
+from aiofmp.base import FMPBaseClient
+
+
+class _FakeSession:
+    """Minimal stand-in for aiohttp.ClientSession that tracks close()."""
+
+    instances: list["_FakeSession"] = []
+
+    def __init__(self, *args, **kwargs):
+        self.closed = False
+        _FakeSession.instances.append(self)
+
+    async def close(self):
+        self.closed = True
+
+
+@pytest.fixture(autouse=True)
+def _reset_fake_sessions():
+    _FakeSession.instances.clear()
+    yield
+    _FakeSession.instances.clear()
+
+
+class TestSessionLifecycle:
+    """Reference-counted start()/close() for safe concurrent use."""
+
+    @pytest.mark.asyncio
+    async def test_overlapping_scopes_share_one_session(self):
+        client = FMPBaseClient(api_key="test")
+        with patch("aiofmp.base.aiohttp.ClientSession", _FakeSession):
+            await client.start()  # scope A enters
+            session = client._session
+            assert session is not None
+
+            await client.start()  # scope B enters (concurrent)
+            assert client._session is session  # reuse, not a second session
+            assert len(_FakeSession.instances) == 1
+
+            # Scope A exits — session MUST survive for still-active scope B.
+            await client.close()
+            assert client._session is session
+            assert session.closed is False
+
+            # Scope B exits — last user gone, now it closes.
+            await client.close()
+            assert client._session is None
+            assert session.closed is True
+
+    @pytest.mark.asyncio
+    async def test_new_session_created_after_full_drain(self):
+        client = FMPBaseClient(api_key="test")
+        with patch("aiofmp.base.aiohttp.ClientSession", _FakeSession):
+            await client.start()
+            first = client._session
+            await client.close()
+            assert client._session is None
+
+            # A later request re-opens a fresh session.
+            await client.start()
+            assert client._session is not None
+            assert client._session is not first
+            await client.close()
+
+    @pytest.mark.asyncio
+    async def test_concurrent_enter_exit_keeps_session_alive_mid_flight(self):
+        """Mimics repro: many concurrent `async with` scopes, one shared client."""
+        client = FMPBaseClient(api_key="test")
+        observed_closed_mid_request = []
+
+        with patch("aiofmp.base.aiohttp.ClientSession", _FakeSession):
+
+            async def one_request():
+                async with client:  # start() / close()
+                    # Yield control so other scopes interleave enter/exit here.
+                    await asyncio.sleep(0)
+                    # The session we're about to "use" must be open.
+                    observed_closed_mid_request.append(client._session is None)
+                    await asyncio.sleep(0)
+
+            await asyncio.gather(*[one_request() for _ in range(20)])
+
+        # No request ever saw a torn-down session while inside its own scope.
+        assert not any(observed_closed_mid_request)
+        # And everything is cleaned up after the last scope exits.
+        assert client._session is None
