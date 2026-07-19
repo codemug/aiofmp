@@ -1,0 +1,115 @@
+# Trail MCP with LIVE data sources (FMP / EDGAR / GMD) on k3s, at http://trail-mcp.ws.local/mcp.
+# Supersedes deploy/trail-mcp.yaml (the lean, provider-less variant).
+#
+# Prereq — create the credentials Secret first (NOT committed):
+#   kubectl -n trail create secret generic trail-mcp-creds \
+#     --from-literal=FMP_API_KEY="<your FMP key>" \
+#     --from-literal=EDGAR_IDENTITY="Your Name your.email@example.com"
+#
+# Then: kubectl apply -f deploy/trail-mcp-full.yaml
+# Use from a tool call: eval/describe/run with data = {"config": "/config/trail.yaml"}
+---
+apiVersion: v1
+kind: Namespace
+metadata: { name: trail }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: trail-mcp-config, namespace: trail }
+data:
+  trail.yaml: |
+    # Credentials come from the environment (the trail-mcp-creds Secret); no secrets in this file.
+    sources:
+      edgar:
+        driver: edgar
+        options:
+          cache_dir: /edgar-cache
+          tickers: [AAPL, MSFT, NVDA, ORCL, CRM, GOOGL, META, DIS, NFLX, VZ, AMZN, HD, MCD, NKE, LOW, KO, PG, WMT, PEP, COST, JNJ, UNH, PFE, MRK, ABBV, XOM, CVX, COP, SLB, EOG, HON, UNP, CAT, GE, BA, JPM, BAC, WFC, GS]
+      fmp:
+        driver: fmp
+        options:
+          cached: true
+          cache_dir: /cache                 # host-mounted 2.5G Parquet cache
+          requests_per_minute: 300
+          tickers: [AAPL, MSFT, NVDA, ORCL, CRM, GOOGL, META, DIS, NFLX, VZ, AMZN, HD, MCD, NKE, LOW, KO, PG, WMT, PEP, COST, JNJ, UNH, PFE, MRK, ABBV, XOM, CVX, COP, SLB, EOG, HON, UNP, CAT, GE, BA, JPM, BAC, WFC, GS]
+      gmd:
+        driver: gmd
+        options:
+          cache_dir: /gmd-cache
+    precedence:
+      income:  [edgar, fmp]
+      balance: [edgar, fmp]
+      cash:    [edgar, fmp]
+      default: [fmp, gmd]
+    panel:
+      periods: [2015, 2024]
+      pit: auto
+      strict: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trail-mcp
+  namespace: trail
+  labels: { app: trail-mcp }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: trail-mcp }
+  template:
+    metadata:
+      labels: { app: trail-mcp }
+    spec:
+      containers:
+        - name: trail-mcp
+          image: 192.168.70.168:30500/trail-mcp-full:0fa7d8e
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef: { name: trail-mcp-creds }     # FMP_API_KEY, EDGAR_IDENTITY
+          ports:
+            - { containerPort: 3000, name: http }
+          volumeMounts:
+            - { name: config, mountPath: /config, readOnly: true }
+            - { name: fmp-cache, mountPath: /cache }
+          readinessProbe:
+            tcpSocket: { port: 3000 }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket: { port: 3000 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 50m, memory: 256Mi }
+            limits: { memory: 1Gi }
+      volumes:
+        - name: config
+          configMap: { name: trail-mcp-config }
+        - name: fmp-cache
+          hostPath:
+            path: /home/usmanshahid/Documents/aiofmp-cache/cache   # single-node k3s
+            type: Directory
+---
+apiVersion: v1
+kind: Service
+metadata: { name: trail-mcp, namespace: trail }
+spec:
+  selector: { app: trail-mcp }
+  ports:
+    - { port: 3000, targetPort: 3000, name: http }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: { name: trail-mcp, namespace: trail }
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: trail-mcp.ws.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: trail-mcp
+                port: { number: 3000 }
