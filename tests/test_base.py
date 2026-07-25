@@ -75,16 +75,21 @@ class TestQueryParamNormalization:
 
         await client._make_request(
             "company-screener",
-            {"isEtf": False, "isActivelyTrading": True, "exchange": "NASDAQ",
-             "limit": 10, "sector": None},
+            {
+                "isEtf": False,
+                "isActivelyTrading": True,
+                "exchange": "NASDAQ",
+                "limit": 10,
+                "sector": None,
+            },
         )
 
         sent = session.sent[0]
         assert sent["isEtf"] == "false", "False must survive as the string FMP expects"
         assert sent["isActivelyTrading"] == "true"
-        assert sent["exchange"] == "NASDAQ"   # strings pass through untouched
-        assert sent["limit"] == 10            # ints pass through untouched
-        assert "sector" not in sent           # an unset filter is simply not sent
+        assert sent["exchange"] == "NASDAQ"  # strings pass through untouched
+        assert sent["limit"] == 10  # ints pass through untouched
+        assert "sector" not in sent  # an unset filter is simply not sent
         assert sent["apikey"] == "test-key"
         assert not any(isinstance(v, bool) for v in sent.values())
 
