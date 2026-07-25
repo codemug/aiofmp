@@ -1,0 +1,40 @@
+# Trail MCP server WITH data-source providers (FMP / EDGAR / GMD) — serves the six tools over
+# streamable-HTTP and can load LIVE data via {"config":"/config/trail.yaml"}.
+# Build from the workspace root:  docker build -f deploy/Dockerfile.trail-mcp -t <reg>/trail-mcp-full:<tag> .
+FROM python:3.13-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# Local trail-lang (with the streamable-http transport). COPY only metadata + the package tree
+# so the sibling .venv/.git never enter the build context.
+COPY trail-py/pyproject.toml trail-py/README.md trail-py/
+COPY trail-py/trail trail-py/trail
+
+# Local provider adapters; their runtime deps (aiofmp, edgartools, …) resolve from PyPI.
+COPY trail-fmp/pyproject.toml trail-fmp/README.md trail-fmp/
+COPY trail-fmp/trail_fmp trail-fmp/trail_fmp
+COPY trail-edgar/pyproject.toml trail-edgar/README.md trail-edgar/
+COPY trail-edgar/trail_edgar trail-edgar/trail_edgar
+COPY trail-gmd/pyproject.toml trail-gmd/README.md trail-gmd/
+COPY trail-gmd/trail_gmd trail-gmd/trail_gmd
+COPY trail-scores/pyproject.toml trail-scores/README.md trail-scores/
+COPY trail-scores/trail_scores trail-scores/trail_scores
+
+# Install trail-lang first (satisfies each adapter's trail-lang requirement from the local tree,
+# not PyPI), then the four adapters (scores = the daily rating-pipeline snapshots).
+RUN pip install "./trail-py[mcp]" ./trail-fmp ./trail-edgar ./trail-gmd ./trail-scores
+
+# Non-root user; cache dirs the trail.yaml points at (FMP cache is host-mounted at /cache).
+RUN useradd --create-home --uid 1000 trail \
+    && mkdir -p /cache /edgar-cache /gmd-cache /config \
+    && chown -R trail:trail /cache /edgar-cache /gmd-cache /config
+USER trail
+
+EXPOSE 3000
+ENTRYPOINT ["trail", "mcp"]
+CMD ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "3000"]
