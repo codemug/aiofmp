@@ -118,7 +118,7 @@ spec:
     spec:
       containers:
         - name: trail-mcp
-          image: 192.168.70.168:30500/trail-mcp-full:scores-3f5dd7d
+          image: 192.168.70.168:30500/trail-mcp-full:scores-3e55821
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef: { name: trail-mcp-creds }     # FMP_API_KEY, EDGAR_IDENTITY
