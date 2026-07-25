@@ -31,7 +31,14 @@ data:
           cached: true
           cache_dir: /cache                 # FMP Parquet cache — mounted from the fmp-cache local PV
           requests_per_minute: 300
-          tickers: [AAPL, MSFT, NVDA, ORCL, CRM, GOOGL, META, DIS, NFLX, VZ, AMZN, HD, MCD, NKE, LOW, KO, PG, WMT, PEP, COST, JNJ, UNH, PFE, MRK, ABBV, XOM, CVX, COP, SLB, EOG, HON, UNP, CAT, GE, BA, JPM, BAC, WFC, GS]
+          # The whole investable set FMP publishes statements for (~26k symbols, global and
+          # multi-currency), discovered rather than hand-listed. Resolved once per cache_hours
+          # and memoised to /cache, since entities() runs on every panel load.
+          # NOTE: edgar stays on its short ticker list — it backfills richer meta for the
+          # mega-caps; everything else is served by fmp.
+          universe:
+            kind: financial_symbols
+            cache_hours: 24
       gmd:
         driver: gmd
         options:
@@ -118,7 +125,7 @@ spec:
     spec:
       containers:
         - name: trail-mcp
-          image: 192.168.70.168:30500/trail-mcp-full:scores-3e55821
+          image: 192.168.70.168:30500/trail-mcp-full:universe-1
           imagePullPolicy: IfNotPresent
           envFrom:
             - secretRef: { name: trail-mcp-creds }     # FMP_API_KEY, EDGAR_IDENTITY
@@ -137,8 +144,11 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 20
           resources:
-            requests: { cpu: 50m, memory: 256Mi }
-            limits: { memory: 1Gi }
+            # Measured: load peaks ~132Mi at 150 entities and grows ~0.04Mi/entity beyond that
+            # (per-entity fetch; the resulting panel itself stays tiny), so the ~26k-symbol
+            # universe projects to ~1.2Gi. 3Gi leaves headroom for a full-universe load.
+            requests: { cpu: 50m, memory: 512Mi }
+            limits: { memory: 3Gi }
       volumes:
         - name: config
           configMap: { name: trail-mcp-config }

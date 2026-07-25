@@ -36,6 +36,59 @@ def _reset_fake_sessions():
     _FakeSession.instances.clear()
 
 
+class _CapturingSession:
+    """Session stand-in that records the query params handed to aiohttp."""
+
+    def __init__(self):
+        self.sent: list[dict] = []
+
+    def get(self, url, params=None, headers=None):
+        self.sent.append(dict(params or {}))
+
+        class _Ctx:
+            async def __aenter__(self_inner):
+                return object()
+
+            async def __aexit__(self_inner, *a):
+                return False
+
+        return _Ctx()
+
+    async def close(self):
+        pass
+
+
+class TestQueryParamNormalization:
+    """aiohttp/yarl raise on bool and None query values, so a boolean filter had
+    to be normalized before it reached the request or it could never be sent."""
+
+    @pytest.mark.asyncio
+    async def test_bools_become_lowercase_strings_and_none_is_dropped(self):
+        client = FMPBaseClient(api_key="test-key")
+        session = _CapturingSession()
+        client._session = session
+
+        async def _ok(response):
+            return []
+
+        client._handle_response = _ok
+
+        await client._make_request(
+            "company-screener",
+            {"isEtf": False, "isActivelyTrading": True, "exchange": "NASDAQ",
+             "limit": 10, "sector": None},
+        )
+
+        sent = session.sent[0]
+        assert sent["isEtf"] == "false", "False must survive as the string FMP expects"
+        assert sent["isActivelyTrading"] == "true"
+        assert sent["exchange"] == "NASDAQ"   # strings pass through untouched
+        assert sent["limit"] == 10            # ints pass through untouched
+        assert "sector" not in sent           # an unset filter is simply not sent
+        assert sent["apikey"] == "test-key"
+        assert not any(isinstance(v, bool) for v in sent.values())
+
+
 class TestSessionLifecycle:
     """Reference-counted start()/close() for safe concurrent use."""
 

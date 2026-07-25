@@ -241,6 +241,16 @@ class FMPBaseClient:
         if params is None:
             params = {}
 
+        # aiohttp/yarl reject bool and None query values outright ("Invalid
+        # variable type: value should be str, int or float"), so a caller
+        # passing is_etf=False could never reach the API. FMP expects the
+        # lowercase strings, and an unset filter must simply not be sent.
+        params = {
+            key: ("true" if value else "false") if isinstance(value, bool) else value
+            for key, value in params.items()
+            if value is not None
+        }
+
         # Always include API key
         params["apikey"] = self.api_key
 
