@@ -50,6 +50,20 @@ pip install -e .
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
 
+## Container Image
+
+The MCP server is published as a multi-arch image on the GitHub Container Registry
+(`ghcr.io/codemug/aiofmp-mcp-server`, tags `latest` and each release, e.g. `1.4.0`):
+
+```bash
+docker run --rm -p 3000:3000 -e FMP_API_KEY=your_key_here \
+  ghcr.io/codemug/aiofmp-mcp-server:latest
+```
+
+It serves the MCP API over HTTP at `http://localhost:3000/mcp/`. See the
+**[Container Image guide](https://github.com/codemug/aiofmp/blob/main/docs/CONTAINER.md)** for Docker
+Compose, configuration, cache persistence, tool selection, and connecting an MCP client.
+
 ## Usage
 
 ### Basic Client Usage
