@@ -1,0 +1,26 @@
+# Source layout we don't need inside the image.
+tests/
+examples/
+scripts/
+docs/
+.github/
+.git/
+.gitignore
+.gitmessage
+
+# Local state that must NOT bleed into the image.
+.cache/
+.venv/
+.fmp_key
+harvester.yaml
+**/__pycache__/
+*.pyc
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+
+# CHANGELOG/LICENSE are fine inside the image but not strictly needed.
+CHANGELOG.md
+uv.lock

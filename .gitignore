@@ -213,3 +213,7 @@ __marimo__/
 
 # Scratch files used to draft PR bodies — safe to ignore
 /.pr-body-*.md
+
+# Trail MCP deployment artifacts (k3s manifests + trail Dockerfile) belong with the
+# trail project, not this repo. Kept on disk locally for the live deployment, ignored here.
+/deploy/

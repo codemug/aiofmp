@@ -1,0 +1,93 @@
+name: Publish container image
+
+# Builds the aiofmp MCP server image (the root Dockerfile) and pushes it to
+# ghcr.io/<owner>/aiofmp-mcp-server. Multi-arch (amd64 + arm64) via Buildx/QEMU.
+#
+# Triggers:
+#   - workflow_run: after the "Release" workflow finishes on main. This is the
+#     reliable "publish with the next release" hook: semantic-release creates the
+#     vX.Y.Z tag with GITHUB_TOKEN, and a token-pushed tag does NOT re-trigger a
+#     `push: tags` workflow (GitHub's loop guard), so we key off the Release run.
+#   - push tags 'v*': covers tags pushed by a human (or a PAT-based release).
+#   - workflow_dispatch: publish any version on demand (e.g. backfill 1.4.0).
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+    branches: [main]
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Image version tag (defaults to the version in pyproject.toml)"
+        required: false
+
+permissions:
+  contents: read
+  packages: write            # push to GitHub Container Registry with GITHUB_TOKEN
+
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  docker:
+    name: Build & push to ghcr.io
+    runs-on: ubuntu-latest
+    # Skip when the upstream Release run failed; always run for tags / manual dispatch.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        # Default ref is correct for every trigger: the tag for a tag push, main HEAD
+        # (post version-bump) for a workflow_run, the dispatch branch for manual runs.
+
+      - name: Set up QEMU (arm64 emulation)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive version
+        id: version
+        run: |
+          set -euo pipefail
+          v="${{ github.event.inputs.version }}"
+          if [ -z "$v" ]; then
+            v="$(grep -m1 '^version' pyproject.toml | sed -E 's/^version *= *"([^"]+)".*/\1/')"
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Publishing aiofmp-mcp-server version: $v"
+
+      - name: Container image metadata (tags + OCI labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/aiofmp-mcp-server
+          tags: |
+            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build & push (linux/amd64, linux/arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
