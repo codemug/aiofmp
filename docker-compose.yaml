@@ -1,0 +1,68 @@
+# aiofmp MCP server, exposed over HTTP at http://localhost:3000.
+#
+# Quick start (published image):
+#   echo "FMP_API_KEY=your_key_here" > .env
+#   docker compose pull && docker compose up
+#
+# Or run local source changes instead of the published image:
+#   docker compose up --build
+#
+# The Parquet cache is bind-mounted from the host so it survives `docker compose
+# down` and is shared across rebuilds. It defaults to ./.cache (created next to
+# this file); point it elsewhere by setting AIOFMP_CACHE_DIR in .env, e.g.
+#   AIOFMP_CACHE_DIR=/mnt/data/aiofmp-cache
+
+services:
+  mcp-server:
+    # Runs the published multi-arch image by default (`docker compose pull`).
+    # `docker compose up --build` instead builds ./Dockerfile and tags it with
+    # this same name. Pin a version with AIOFMP_IMAGE_TAG in .env (default: latest).
+    image: ghcr.io/codemug/aiofmp-mcp-server:${AIOFMP_IMAGE_TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aiofmp-mcp-server
+    restart: unless-stopped
+    # Cap CPU/memory so the server can't hog the host. `docker compose up` honors
+    # deploy.resources.limits (non-swarm). Tune if the cache workload needs more.
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 3g
+        reservations:
+          memory: 256M
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env                        # FMP_API_KEY lives here
+        required: false                   # falls back to the shell env if .env doesn't exist
+    environment:
+      # Pass through from the host shell when set, otherwise rely on .env.
+      # Compose substitution: ${VAR:-} = "use host env or empty".
+      FMP_API_KEY: ${FMP_API_KEY:-}
+      AIOFMP_CACHE_FILE_PATH: /cache
+
+      # Uncomment to restrict which MCP tools are registered (the grammar is
+      # documented in README.md → "Selective Tool Registration"):
+      # AIOFMP_MCP_TOOLS: "chart(*),quote(*),search,statements(*)"
+      # AIOFMP_MCP_EXCLUDE_TOOLS: "form13f,senate"
+
+    # Transport / host / port / cache flags are baked into the image's CMD
+    # (see Dockerfile). Uncomment + edit to override at runtime, e.g. to
+    # use a different log level:
+    # command: ["--transport", "http", "--host", "0.0.0.0", "--port", "3000", "--cached", "--log-level", "DEBUG"]
+    volumes:
+      # Host cache dir → /cache. Defaults to ./.cache (gitignored); override the
+      # host side with AIOFMP_CACHE_DIR in .env. Never hardcode a personal path here.
+      - ${AIOFMP_CACHE_DIR:-./.cache}:/cache
+    healthcheck:
+      # Plain TCP check on the MCP HTTP port. We can't hit /mcp/ with curl
+      # because FastMCP returns 406 without the proper Accept header — any
+      # working response would still fail the check. A TCP connect proves
+      # the uvicorn listener is alive, which is the right liveness signal.
+      test: ["CMD", "python", "-c", "import socket,sys; s=socket.socket(); s.settimeout(3); s.connect(('127.0.0.1',3000)); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
