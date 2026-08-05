@@ -76,8 +76,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           uv run semantic-release --verbose version
-          uv run semantic-release --verbose publish
-          uv run twine upload dist/* --verbose
+          # `uv build` (semantic-release's build_command) only runs when a release is
+          # warranted, so a no-release push (ci/docs/chore/style commits) leaves dist/
+          # empty. Guard the publish + PyPI upload instead of failing on an empty glob.
+          if [ -d dist ] && [ -n "$(ls -A dist 2>/dev/null)" ]; then
+            uv run semantic-release --verbose publish
+            uv run twine upload dist/* --verbose
+          else
+            echo "No release for these commits; skipping GitHub asset upload + PyPI publish."
+          fi
 
   release:
     name: Ensure GitHub Release for Tag
