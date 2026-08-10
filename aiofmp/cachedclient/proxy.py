@@ -67,17 +67,35 @@ class CachedCategoryProxy:
         category_name: str,
         storage: StorageBackend,
         registry: EndpointRegistry,
+        staleness_days: int = 1,
     ) -> None:
         self._real = real_category
         self._category_name = category_name
         self._storage = storage
         self._registry = registry
+        # Scalar rather than the CachedClientConfig object: client.py imports this module,
+        # so importing the config back would be circular.
+        self._staleness_days = staleness_days
         self._locks: dict[tuple[str, ...], asyncio.Lock] = {}
 
     def _get_lock(self, key: tuple[str, ...]) -> asyncio.Lock:
         if key not in self._locks:
             self._locks[key] = asyncio.Lock()
         return self._locks[key]
+
+    async def _period_data_is_fresh(self, key: tuple[str, ...]) -> bool:
+        """Whether stored period-based data is recent enough to serve without an API call.
+
+        Errs toward refetching: a negative ``staleness_days``, absent metadata, or an
+        unreadable sidecar all return False. Serving stale data silently is worse than
+        paying for a request.
+        """
+        if self._staleness_days < 0:
+            return False
+        stored_meta = await self._storage.get_stored_range(key)
+        if stored_meta is None or stored_meta.last_updated is None:
+            return False
+        return (date.today() - stored_meta.last_updated).days <= self._staleness_days
 
     def __getattr__(self, name: str) -> Any:
         real_method = getattr(self._real, name)
@@ -208,7 +226,28 @@ class CachedCategoryProxy:
         """Cache logic for Pattern B (period-based) endpoints."""
         original_limit = bound_args.get(meta.limit_param) if meta.limit_param else None
 
-        # Always fetch from API with the caller's original params
+        # Serve from storage when it is fresh enough, WITHOUT calling the API.
+        #
+        # Without this gate the Pattern B cache is a write-through archive rather than a
+        # cache: it merged and stored every response but never avoided a single network
+        # call, so `staleness_days` was dead config. The cost is not theoretical — a
+        # 5,316-name universe re-issued ~21k requests (4 statement endpoints per name) on
+        # every rebuild, and the provider's rate limiter turned that into a 4-5 hour crawl
+        # that never completed. Period-based data is annual/quarterly statements: it
+        # changes a handful of times a year, so re-fetching it on every build buys nothing.
+        if await self._period_data_is_fresh(storage_key):
+            stored = await self._storage.read(storage_key)
+            if stored:
+                fresh_records = sorted(
+                    stored,
+                    key=lambda r: str(r.get(meta.response_date_field, "")),
+                    reverse=True,
+                )
+                if original_limit is not None:
+                    return fresh_records[:original_limit]
+                return fresh_records
+
+        # Stale, absent, or unreadable: fetch from API with the caller's original params
         result = await real_method(*original_args, **original_kwargs)
 
         # Read existing stored data

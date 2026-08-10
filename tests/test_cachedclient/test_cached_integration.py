@@ -1,11 +1,12 @@
 """Integration tests for the CachedClient with mocked FmpClient."""
 
+import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from aiofmp.cachedclient import CachedClient
+from aiofmp.cachedclient import CachedClient, CachedClientConfig
 from aiofmp.cachedclient.storage.parquet import ParquetStorage
 
 
@@ -207,7 +208,13 @@ class TestPeriodBasedCaching:
 
         mock_fmp.statements.income_statement.side_effect = [first_fetch, second_fetch]
 
-        cached = CachedClient(mock_fmp, storage)
+        # staleness_days=-1 forces a refetch on every call, which is what this test is
+        # about. Under the default the second call is served from storage and never
+        # reaches the API (see test_period_based_serves_fresh_from_storage), so the merge
+        # path has to be exercised explicitly.
+        cached = CachedClient(
+            mock_fmp, storage, config=CachedClientConfig(staleness_days=-1)
+        )
         async with cached:
             # First call
             r1 = await cached.statements.income_statement(
@@ -224,6 +231,76 @@ class TestPeriodBasedCaching:
             # The updated record should have the new value
             sept_2024 = [r for r in r2 if r["date"] == "2024-09-28"][0]
             assert sept_2024["revenue"] == 391035000001
+
+    @pytest.mark.asyncio
+    async def test_period_based_serves_fresh_from_storage(self, mock_fmp, storage):
+        """A second call with fresh storage must not touch the API at all.
+
+        This is the whole point of the cache for Pattern B. Without the freshness gate
+        the proxy merged and stored every response but always re-issued the request, so a
+        5,316-name universe re-fetched ~21k statement endpoints on every rebuild and the
+        provider's rate limiter stretched that into hours.
+        """
+        records = [
+            {"date": "2024-09-28", "symbol": "AAPL", "revenue": 391035000000},
+            {"date": "2023-09-30", "symbol": "AAPL", "revenue": 383285000000},
+        ]
+        mock_fmp.statements.income_statement.return_value = records
+
+        cached = CachedClient(mock_fmp, storage)
+        async with cached:
+            r1 = await cached.statements.income_statement(
+                "AAPL", limit=5, period="annual"
+            )
+            r2 = await cached.statements.income_statement(
+                "AAPL", limit=5, period="annual"
+            )
+
+        assert mock_fmp.statements.income_statement.await_count == 1
+        assert len(r2) == len(r1) == 2
+        assert {r["date"] for r in r2} == {"2024-09-28", "2023-09-30"}
+
+    @pytest.mark.asyncio
+    async def test_period_based_refetches_when_storage_is_stale(
+        self, mock_fmp, storage
+    ):
+        """Once past staleness_days the API is called again."""
+        records = [{"date": "2024-09-28", "symbol": "AAPL", "revenue": 391035000000}]
+        mock_fmp.statements.income_statement.return_value = records
+
+        # staleness_days=0 means anything not written today is stale; combined with
+        # rewriting the sidecar to an old date, the second call must refetch.
+        cached = CachedClient(
+            mock_fmp, storage, config=CachedClientConfig(staleness_days=0)
+        )
+        async with cached:
+            await cached.statements.income_statement("AAPL", limit=5, period="annual")
+
+            meta_path = next(Path(storage._base_dir).rglob("metadata.json"))
+            meta = json.loads(meta_path.read_text())
+            meta["last_updated"] = "2020-01-01"
+            meta_path.write_text(json.dumps(meta))
+
+            await cached.statements.income_statement("AAPL", limit=5, period="annual")
+
+        assert mock_fmp.statements.income_statement.await_count == 2
+
+    @pytest.mark.asyncio
+    async def test_period_based_fetches_when_nothing_stored(self, mock_fmp, storage):
+        """An empty cache must always reach the API, whatever the staleness setting."""
+        mock_fmp.statements.income_statement.return_value = [
+            {"date": "2024-09-28", "symbol": "AAPL", "revenue": 1}
+        ]
+        cached = CachedClient(
+            mock_fmp, storage, config=CachedClientConfig(staleness_days=3650)
+        )
+        async with cached:
+            result = await cached.statements.income_statement(
+                "AAPL", limit=5, period="annual"
+            )
+
+        assert mock_fmp.statements.income_statement.await_count == 1
+        assert len(result) == 1
 
     @pytest.mark.asyncio
     async def test_period_based_respects_limit(self, mock_fmp, storage):

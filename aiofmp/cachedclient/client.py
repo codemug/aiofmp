@@ -101,7 +101,11 @@ class CachedClient:
         for cat_name in category_names:
             real_category = getattr(fmp_client, cat_name)
             proxy = CachedCategoryProxy(
-                real_category, cat_name, self._storage, self._registry
+                real_category,
+                cat_name,
+                self._storage,
+                self._registry,
+                staleness_days=self._config.staleness_days,
             )
             setattr(self, cat_name, proxy)
 
