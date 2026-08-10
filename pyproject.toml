@@ -1,6 +1,6 @@
 [project]
 name = "aiofmp"
-version = "1.4.0"
+version = "1.4.1"
 description = "Asynchronous Financial Modeling Prep API Client with MCP Server"
 readme = "README.md"
 license = {text = "Apache 2.0"}
