@@ -1,0 +1,23 @@
+[project]
+name = "trail-snapshot-store"
+version = "0.1.0"
+description = "Postgres-backed trail ViewStore: tracked views persisted into the snapshot store"
+requires-python = ">=3.11"
+dependencies = ["trail-lang>=0.18.0", "polars>=1.0", "psycopg[binary]>=3.1"]
+
+# trail.providers is the WRITEABLE VIEW-STORE group (trail/providers.py:17).
+# Sources use trail.sources. Declaring a store under the wrong group resolves to
+# nothing and trail silently falls back to a local-disk store - a deployment
+# that looks healthy while writing views somewhere else entirely.
+[project.entry-points."trail.providers"]
+views_pg = "trail_snapshot_store:PgViewStore"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["trail_snapshot_store"]
