@@ -216,4 +216,5 @@ __marimo__/
 
 # Trail MCP deployment artifacts (k3s manifests + trail Dockerfile) belong with the
 # trail project, not this repo. Kept on disk locally for the live deployment, ignored here.
-/deploy/
+/deploy/trail-snapshot-store/.venv/
+trail-snapshot-source/.venv/
