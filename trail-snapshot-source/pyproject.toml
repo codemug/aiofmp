@@ -1,0 +1,21 @@
+[project]
+name = "trail-snapshot-source"
+version = "0.1.0"
+description = "Expose snapshot facts to trail as panel columns, with a published_at changefeed"
+requires-python = ">=3.11"
+dependencies = ["trail-lang>=0.18.0", "polars>=1.0", "psycopg[binary]>=3.1"]
+
+# trail.sources is the READ-side group - the one trail-fmp uses. View stores go
+# under trail.providers instead; the two are not interchangeable.
+[project.entry-points."trail.sources"]
+snapshot = "trail_snapshot_source:SnapshotSource"
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["trail_snapshot_source"]
