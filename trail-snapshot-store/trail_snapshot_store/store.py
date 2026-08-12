@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 
 import polars as pl
 import psycopg
@@ -39,13 +40,16 @@ class PgViewStore(ViewStore):
 
     def __init__(self, options: dict | None = None) -> None:
         options = options or {}
-        try:
-            self._dsn = options["dsn"]
-        except KeyError:
+        # Option first, environment second — the same precedence trail-fmp uses
+        # for its API key. trail.yaml is a ConfigMap, so the DSN carrying a
+        # password must come from the environment (secret-backed) rather than be
+        # written into config that ends up in version control.
+        self._dsn = options.get("dsn") or os.environ.get("SNAPSHOT_DSN")
+        if not self._dsn:
             raise ValueError(
-                "views_pg requires a 'dsn' option, e.g. "
-                "postgresql://snapshot@snapshot-db.trail.svc.cluster.local:5432/snapshot"
-            ) from None
+                "E-SNAPSHOT-DSN views_pg requires a connection string; "
+                "set options.dsn or the SNAPSHOT_DSN environment variable"
+            )
         self._schema = options.get("schema", "snapshot")
         with self._connect() as c:
             c.execute(f"CREATE SCHEMA IF NOT EXISTS {self._schema}")
