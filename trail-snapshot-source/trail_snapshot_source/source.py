@@ -16,6 +16,7 @@ acceptedDate; this is the same idea for a different backend.
 from __future__ import annotations
 
 import datetime as dt
+import os
 
 import polars as pl
 import psycopg
@@ -41,10 +42,15 @@ class SnapshotSource:
 
     def __init__(self, options: dict | None = None) -> None:
         options = options or {}
-        try:
-            self._dsn = options["dsn"]
-        except KeyError:
-            raise ValueError("snapshot source requires a 'dsn' option") from None
+        # Option first, environment second - the precedence trail-fmp uses for
+        # its API key. trail.yaml is a ConfigMap, so a password-bearing DSN has
+        # to arrive through the environment from a secret.
+        self._dsn = options.get("dsn") or os.environ.get("SNAPSHOT_DSN")
+        if not self._dsn:
+            raise ValueError(
+                "E-SNAPSHOT-DSN snapshot source requires a connection string; "
+                "set options.dsn or the SNAPSHOT_DSN environment variable"
+            )
         self._schema = options.get("schema", "snapshot")
 
     def _connect(self):
