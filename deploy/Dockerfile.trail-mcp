@@ -1,0 +1,67 @@
+# trail-mcp: the Trail MCP server WITH live data-source adapters (FMP / GMD / scores / snapshot).
+#
+# Build from the aiofmp workspace root (the COPYs below are relative to it):
+#   docker build -f deploy/Dockerfile.trail-mcp -t <reg>/trail-mcp-full:<tag> .
+#
+# RECONSTRUCTED 2026-08-12, and committed this time. The working version of this file previously
+# existed only as an uncommitted working-tree edit, and was lost when local main was reset to
+# origin/main (upstream untracked deploy/ in 1eb3b06). Reconstruction verified against the running
+# cache-fix-1 image: trail-lang 0.18.0, trail-fmp 0.3.0, trail-gmd 0.3.0, trail-scores 0.1.0,
+# numpy 2.x, and trail-edgar ABSENT.
+#
+# The base is the upstream release image — language + MCP server, published by trail-lang's own
+# release workflow. This file used to vendor trail-py and reinstall the language on every adapter
+# change; pinning a RELEASED version instead is deliberate. An unpinned working tree is what
+# silently moved the language from 0.15 to 0.17 underneath a tracked view and invalidated a
+# 3.5-hour build. The consequence to remember: local trail-py edits no longer reach the cluster
+# until a version is tagged and this pin is bumped.
+FROM ghcr.io/trail-language/trail-lang:0.18.0
+
+# The base finishes as the unprivileged `trail` user; installs need root, and we drop back after.
+USER root
+WORKDIR /app
+
+# aiofmp from the LOCAL tree, not PyPI. It carries fixes ahead of the published version and pip
+# would consider a same-versioned wheel sufficient — silently installing a client whose bool query
+# params never reach the API, and whose period-based cache never actually avoids a request.
+COPY pyproject.toml README.md aiofmp-src/
+COPY aiofmp aiofmp-src/aiofmp
+RUN pip install --no-cache-dir ./aiofmp-src
+
+# Provider adapters. trail-edgar is deliberately ABSENT: EDGAR was removed from trail.yaml after it
+# aborted a full 5,368-name build by raising CompanyNotFoundError on a ticker it did not know, while
+# only ever covering 39 mega-caps that fmp already served. Two days of runs wrote nothing.
+COPY trail-fmp/pyproject.toml trail-fmp/README.md trail-fmp/
+COPY trail-fmp/trail_fmp trail-fmp/trail_fmp
+COPY trail-gmd/pyproject.toml trail-gmd/README.md trail-gmd/
+COPY trail-gmd/trail_gmd trail-gmd/trail_gmd
+COPY trail-scores/pyproject.toml trail-scores/README.md trail-scores/
+COPY trail-scores/trail_scores trail-scores/trail_scores
+RUN pip install --no-cache-dir ./trail-fmp ./trail-gmd ./trail-scores
+
+# Snapshot integration. These register under DIFFERENT entry-point groups and are not
+# interchangeable: the store under `trail.providers` (writeable view stores), the source under
+# `trail.sources` (read side). A store declared in the wrong group resolves to nothing and trail
+# silently falls back to a local-disk store — a deployment that looks healthy while writing views
+# somewhere else entirely.
+COPY trail-snapshot-store/pyproject.toml trail-snapshot-store/
+COPY trail-snapshot-store/trail_snapshot_store trail-snapshot-store/trail_snapshot_store
+COPY trail-snapshot-source/pyproject.toml trail-snapshot-source/
+COPY trail-snapshot-source/trail_snapshot_source trail-snapshot-source/trail_snapshot_source
+RUN pip install --no-cache-dir ./trail-snapshot-store ./trail-snapshot-source
+
+# numpy is NOT optional despite nothing declaring it. Polars' Rust extension reaches for the NumPy
+# C-API capsule on to_numpy paths and, when numpy is missing, raises a PyO3 PanicException that
+# ABORTS the process — the server dies with SIGSEGV seconds into a fetch, not with an ImportError.
+# It used to arrive transitively (edgartools -> pandas -> numpy); removing EDGAR removed it, and
+# nothing failed until runtime. Pinned here explicitly so the coupling is visible.
+RUN pip install --no-cache-dir "numpy>=2,<3"
+
+# Mount points the ConfigMap/PVCs land on. /scores and /views are written at runtime by the server
+# (to_file and the view store), so they must be writable by the runtime user.
+RUN mkdir -p /cache /gmd-cache /config /scores /views \
+    && chown -R trail:trail /cache /gmd-cache /scores /views
+
+USER trail
+
+# EXPOSE 3000, ENTRYPOINT ["trail","mcp"] and the streamable-http CMD are inherited from the base.
