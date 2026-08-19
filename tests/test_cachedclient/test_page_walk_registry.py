@@ -153,6 +153,26 @@ class TestPageWalkEndpointRegistrations:
         assert ep.page_param == "page"
         assert ep.walk_date_field == "filingDate"
 
+    def test_insider_trades_search_registered(self) -> None:
+        """The per-symbol feed, distinct from the global `latest` one above.
+
+        A harvest that walks a universe symbol by symbol uses this method, so
+        without an entry every call bypasses the cache -- the case that made a
+        caller's nightly run spend ~4.3GB against a byte-metered plan.
+        """
+        reg = build_default_registry()
+        ep = reg.get("insider_trades", "search_insider_trades")
+        assert ep is not None
+        assert ep.pattern == TemporalPattern.PAGE_WALK
+        assert ep.api_endpoint == "insider-trading/search"
+        # Sharded per symbol, unlike the global feed.
+        assert ep.entity_key_args == ["symbol"]
+        assert ep.page_param == "page"
+        assert ep.limit_param == "limit"
+        # Form 4 allows two business days to file, so filingDate orders the
+        # feed; transactionDate runs behind it.
+        assert ep.walk_date_field == "filingDate"
+
     def test_form13f_latest_filings_registered(self) -> None:
         reg = build_default_registry()
         ep = reg.get("form13f", "latest_filings")
