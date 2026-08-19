@@ -541,6 +541,32 @@ def build_default_registry() -> EndpointRegistry:
         )
     )
 
+    # --- Insider trades, per symbol ---
+    #
+    # `latest_insider_trades` above is a GLOBAL feed. Callers harvesting a
+    # universe symbol by symbol use `search_insider_trades` instead, and without
+    # an entry here every one of those calls goes uncached: a nightly harvest of
+    # ~5,900 symbols measured 60KB per page across ~12 pages each, about 4.3GB a
+    # night against a plan that meters bytes on a rolling window.
+    registry.register(
+        CacheableEndpoint(
+            category="insider_trades",
+            method="search_insider_trades",
+            api_endpoint="insider-trading/search",
+            pattern=TemporalPattern.PAGE_WALK,
+            # Sharded per symbol, unlike the global feed above.
+            entity_key_args=["symbol"],
+            page_param="page",
+            limit_param="limit",
+            # Form 4 allows two business days to file, so the filing date is
+            # what orders the feed -- transactionDate runs behind it and would
+            # make the walk look out of order.
+            walk_date_field="filingDate",
+            default_page_size=100,
+            call_params=["symbol", "page", "limit"],
+        )
+    )
+
     # --- Form 13F (global walk; per-CIK shard on write) ---
     registry.register(
         CacheableEndpoint(
