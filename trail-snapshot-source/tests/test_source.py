@@ -1,5 +1,7 @@
 """Facts as trail panel columns, plus the changefeed that drives incremental recompute."""
+
 import os
+
 import pytest
 from trail_snapshot_source import SnapshotSource
 
@@ -14,7 +16,8 @@ def _fact(conn, subj, pred, val, valid_from, published_at):
         """INSERT INTO snapshot.facts
              (subject, predicate, value, kind, valid_from, published_at, fidelity, source_id)
            VALUES (%s, %s, %s, 'observation', %s, %s, 'vintage', 1)""",
-        (subj, pred, val, valid_from, published_at))
+        (subj, pred, val, valid_from, published_at),
+    )
 
 
 def test_freshness_token_is_none_when_empty(conn, src):

@@ -13,6 +13,7 @@ exactly the cells it should. ``trail-fmp`` does the same thing keyed on filing
 date (``trail_fmp/source.py:172``), noting that an amendment carries a newer
 acceptedDate; this is the same idea for a different backend.
 """
+
 from __future__ import annotations
 
 import datetime as dt
