@@ -14,6 +14,7 @@ Registered as ``views_pg`` under the ``trail.providers`` entry-point group. Note
 that trail resolves the store from ``config.providers["views"]`` — a hardcoded
 key — so the trail.yaml stanza must be named ``views`` whatever the driver is.
 """
+
 from __future__ import annotations
 
 import io
