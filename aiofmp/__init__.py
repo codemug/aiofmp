@@ -8,6 +8,7 @@ category-based organization for better code management.
 from .analyst import AnalystCategory
 from .base import (
     FMPAuthenticationError,
+    FMPBandwidthError,
     FMPBaseClient,
     FMPBudgetError,
     FMPError,
@@ -45,6 +46,7 @@ __all__ = [
     "FMPAuthenticationError",
     "FMPRateLimitError",
     "FMPResponseError",
+    "FMPBandwidthError",
     "FMPBudgetError",
     "FMPPaywallError",
     "FMPServerError",
