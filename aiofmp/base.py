@@ -42,6 +42,28 @@ class FMPResponseError(FMPError):
     pass
 
 
+class FMPBandwidthError(FMPError):
+    """Raised when the PLAN's rolling bandwidth allowance is exhausted.
+
+    Deliberately NOT a subclass of :class:`FMPRateLimitError`, even though both
+    arrive as HTTP 429, because they need opposite responses:
+
+        FMPRateLimitError   too many requests per minute. Clears in seconds, so
+                            the client retries it transparently.
+        FMPBandwidthError   the plan's rolling BYTE allowance is spent. Persists
+                            until the window rolls over -- days, typically -- so
+                            no retry can succeed.
+
+    Subclassing would put it back inside the ``except FMPRateLimitError`` arm of
+    the retry loop, which is the bug this class exists to fix.
+
+    Distinct from :class:`FMPBudgetError`, which is the harvester's own
+    client-side cap rather than a server-side refusal.
+    """
+
+    pass
+
+
 class FMPBudgetError(FMPError):
     """Raised when the harvester's monthly hard bandwidth cap is exceeded."""
 
@@ -397,6 +419,27 @@ class FMPBaseClient:
                 "HTTP 402: endpoint or resource not included in current plan"
             )
         elif response.status == 429:
+            # FMP overloads 429 for two conditions that need opposite handling,
+            # and the only thing distinguishing them is the response BODY:
+            #
+            #   {"Error Message": "Limit Reach . Please upgrade..."}
+            #   {"Error Message": "Bandwidth Limit Reach . Please upgrade..."}
+            #
+            # The first is per-minute pacing and clears in seconds. The second
+            # means the plan's rolling byte allowance is gone and nothing will
+            # succeed until the window rolls. Discarding the body made them
+            # indistinguishable, so an exhausted allowance entered the
+            # transparent-retry path and looped at 5s/10s/20s forever -- a real
+            # deployment sat in that loop for ten hours, fetching nothing.
+            try:
+                detail = (await response.text())[:300]
+            except Exception:  # noqa: BLE001 - a body we cannot read is not fatal
+                detail = ""
+            if "bandwidth limit" in detail.lower():
+                raise FMPBandwidthError(
+                    "HTTP 429: plan bandwidth allowance exhausted; retrying "
+                    "cannot succeed until the rolling window rolls over"
+                )
             raise FMPRateLimitError("Rate limit exceeded")
         elif response.status >= 500:
             raise FMPServerError(f"Server error: {response.status}")
